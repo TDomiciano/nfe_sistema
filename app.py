@@ -160,18 +160,42 @@ if arquivos:
                 encoding='unicode'
             ).upper()
 
-            if "CANCELAMENTO HOMOLOGADO" in xml_str:
+            # EVENTO CANCELAMENTO
+            if (
+                "CANCELAMENTO" in xml_str
+                and
+                "110111" in xml_str
+            ):
 
-                inf_evento = root.find(
-                    './/nfe:infEvento',
+                chave_evento = ""
+
+                # tenta retEvento
+                ret_evento = root.find(
+                    './/nfe:retEvento/nfe:infEvento',
                     ns
                 )
 
-                chave_evento = get_text(
-                    inf_evento,
-                    'nfe:chNFe',
-                    ns
-                )
+                if ret_evento is not None:
+
+                    chave_evento = get_text(
+                        ret_evento,
+                        'nfe:chNFe',
+                        ns
+                    )
+
+                # fallback infEvento
+                if chave_evento == "":
+
+                    inf_evento = root.find(
+                        './/nfe:infEvento',
+                        ns
+                    )
+
+                    chave_evento = get_text(
+                        inf_evento,
+                        'nfe:chNFe',
+                        ns
+                    )
 
                 if chave_evento != "":
 
