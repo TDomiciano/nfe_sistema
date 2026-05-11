@@ -55,7 +55,6 @@ def buscar_regra(ncm, origem, destino):
     ncm = str(ncm).replace(".0", "").strip()
 
     filtro = regras[
-
         (regras["ncm"]
             .astype(str)
             .str.replace(".0", "", regex=False)
@@ -74,7 +73,6 @@ def buscar_regra(ncm, origem, destino):
             .astype(str)
             .str.upper()
             .str.strip() == str(destino).upper().strip())
-
     ]
 
     if not filtro.empty:
@@ -91,7 +89,6 @@ def buscar_regra_st(ncm, origem, destino):
     ncm = str(ncm).replace(".0", "").strip()
 
     filtro = regras_st[
-
         (regras_st["ncm"]
             .astype(str)
             .str.replace(".0", "", regex=False)
@@ -110,7 +107,6 @@ def buscar_regra_st(ncm, origem, destino):
             .astype(str)
             .str.upper()
             .str.strip() == str(destino).upper().strip())
-
     ]
 
     if not filtro.empty:
@@ -154,8 +150,6 @@ if arquivos:
 
             dest = root.find('.//nfe:dest', ns)
 
-            total = root.find('.//nfe:ICMSTot', ns)
-
             # =========================
             # CHAVE ACESSO
             # =========================
@@ -175,23 +169,35 @@ if arquivos:
             # =========================
             status = "AUTORIZADA"
 
-xml_str = ET.tostring(
-    root,
-    encoding='unicode'
-).upper()
+            xml_str = ET.tostring(
+                root,
+                encoding='unicode'
+            ).upper()
 
-if "CANCELAMENTO HOMOLOGADO" in xml_str:
+            if "CANCELAMENTO HOMOLOGADO" in xml_str:
 
-    status = "CANCELADA"
+                status = "CANCELADA"
 
-elif "DENEGADO" in xml_str:
+            elif "DENEGADO" in xml_str:
 
-    status = "DENEGADA"
+                status = "DENEGADA"
 
-elif "REJEICAO" in xml_str:
+            elif "REJEICAO" in xml_str:
 
-    status = "REJEITADA"
-   
+                status = "REJEITADA"
+
+            ender_emit = (
+                emit.find('nfe:enderEmit', ns)
+                if emit is not None
+                else None
+            )
+
+            ender_dest = (
+                dest.find('nfe:enderDest', ns)
+                if dest is not None
+                else None
+            )
+
             # =========================
             # CLIENTE PF/PJ
             # =========================
