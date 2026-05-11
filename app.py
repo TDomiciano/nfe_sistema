@@ -656,11 +656,9 @@ if not df.empty:
 
     st.subheader("📊 Resultado Fiscal")
 
-    st.dataframe(
-        df,
-        use_container_width=True
-    )
-
+ # =========================
+    # EXPORTA CSV
+    # =========================
     csv = df.to_csv(
         index=False,
         sep=';'
