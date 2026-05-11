@@ -213,7 +213,8 @@ if arquivos:
 
                     if status_aut != "":
 
-                        status = status_aut          # =========================
+                        status = status_aut          
+# =========================
 # ICMS ITEM
 # =========================
 icms_tag = (
