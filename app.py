@@ -139,12 +139,14 @@ chaves_canceladas = set()
 if arquivos:
 
     # =========================
-    # PRIMEIRO PASSO
-    # IDENTIFICA EVENTOS
+    # PRIMEIRO LOOP
+    # IDENTIFICA CANCELAMENTOS
     # =========================
     for arq in arquivos:
 
         try:
+
+            arq.seek(0)
 
             tree = ET.parse(arq)
             root = tree.getroot()
@@ -181,12 +183,14 @@ if arquivos:
             pass
 
     # =========================
-    # SEGUNDO PASSO
+    # SEGUNDO LOOP
     # PROCESSA NFS
     # =========================
     for arq in arquivos:
 
         try:
+
+            arq.seek(0)
 
             tree = ET.parse(arq)
             root = tree.getroot()
@@ -295,7 +299,9 @@ if arquivos:
 
                 imposto = item.find('nfe:imposto', ns)
 
+                # =========================
                 # ICMS ITEM
+                # =========================
                 icms_tag = (
                     imposto.find('.//nfe:ICMS/*', ns)
                     if imposto is not None
@@ -308,7 +314,9 @@ if arquivos:
                     ns
                 )
 
+                # =========================
                 # PIS ITEM
+                # =========================
                 pis_tag = (
                     imposto.find('.//nfe:PIS/*', ns)
                     if imposto is not None
@@ -321,7 +329,9 @@ if arquivos:
                     ns
                 )
 
+                # =========================
                 # COFINS ITEM
+                # =========================
                 cofins_tag = (
                     imposto.find('.//nfe:COFINS/*', ns)
                     if imposto is not None
@@ -334,13 +344,18 @@ if arquivos:
                     ns
                 )
 
+                # =========================
+                # ICMS
+                # =========================
                 icms = (
                     imposto.find('.//nfe:ICMS/*', ns)
                     if imposto is not None
                     else None
                 )
 
+                # =========================
                 # DADOS XML
+                # =========================
                 ncm_xml = get_text(
                     prod,
                     'nfe:NCM',
@@ -369,7 +384,9 @@ if arquivos:
                     ns
                 )
 
+                # =========================
                 # BUSCA REGRAS
+                # =========================
                 regra = buscar_regra(
                     ncm_xml,
                     uf_origem,
@@ -382,7 +399,9 @@ if arquivos:
                     uf_destino
                 )
 
+                # =========================
                 # DADOS REGRA
+                # =========================
                 if regra is not None:
 
                     cfop_regra = (
@@ -407,7 +426,9 @@ if arquivos:
                     cst_regra = ""
                     aliquota_regra = ""
 
+                # =========================
                 # VALIDACOES
+                # =========================
                 divergencias = []
 
                 if regra is None:
@@ -459,7 +480,9 @@ if arquivos:
                                 "Erro ao validar aliquota ICMS"
                             )
 
+                # =========================
                 # VALIDA ST
+                # =========================
                 csts_st = [
                     "10",
                     "30",
@@ -492,7 +515,9 @@ if arquivos:
                         "Produto possui ST sem regra configurada"
                     )
 
+                # =========================
                 # DADOS
+                # =========================
                 dados.append({
 
                     "Numero NF": get_text(
