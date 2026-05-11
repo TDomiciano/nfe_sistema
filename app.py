@@ -173,56 +173,24 @@ if arquivos:
             # =========================
             # STATUS NF
             # =========================
-            status = "SEM STATUS"
+            status = "AUTORIZADA"
 
-            evento_cancel = root.find(
-                './/nfe:retEvento',
-                ns
-            )
+xml_str = ET.tostring(
+    root,
+    encoding='unicode'
+).upper()
 
-            if evento_cancel is not None:
+if "CANCELAMENTO HOMOLOGADO" in xml_str:
 
-                status_cancel = get_text(
-                    evento_cancel,
-                    'nfe:xMotivo',
-                    ns
-                )
+    status = "CANCELADA"
 
-                if status_cancel != "":
+elif "DENEGADO" in xml_str:
 
-                    status = (
-                        f"CANCELADA - {status_cancel}"
-                    )
+    status = "DENEGADA"
 
-            else:
+elif "REJEICAO" in xml_str:
 
-                prot = root.find(
-                    './/nfe:protNFe',
-                    ns
-                )
-
-                if prot is not None:
-
-                    status_aut = get_text(
-                        prot,
-                        'nfe:xMotivo',
-                        ns
-                    )
-
-                    if status_aut != "":
-
-                        status = status_aut
-
-            ender_emit = (
-                emit.find('nfe:enderEmit', ns)
-                if emit is not None
-                else None
-            )
-
-            ender_dest = (
-                dest.find('nfe:enderDest', ns)
-                if dest is not None
-                else None
+    status = "REJEITADA"
             )
 
             # =========================
