@@ -191,8 +191,7 @@ elif "DENEGADO" in xml_str:
 elif "REJEICAO" in xml_str:
 
     status = "REJEITADA"
-           
-
+   
             # =========================
             # CLIENTE PF/PJ
             # =========================
