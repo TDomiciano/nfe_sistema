@@ -156,6 +156,44 @@ if arquivos:
 
             total = root.find('.//nfe:ICMSTot', ns)
 
+            # =========================
+            # CHAVE ACESSO
+            # =========================
+            inf_nfe = root.find('.//nfe:infNFe', ns)
+
+            chave_acesso = ""
+
+            if inf_nfe is not None:
+
+                chave_acesso = (
+                    inf_nfe.attrib.get("Id", "")
+                    .replace("NFe", "")
+                )
+
+            # =========================
+            # STATUS NF
+            # =========================
+            status = get_text(
+                root,
+                './/nfe:xMotivo',
+                ns
+            )
+
+            # =========================
+            # PIS / COFINS
+            # =========================
+            pis_xml = get_text(
+                total,
+                'nfe:vPIS',
+                ns
+            )
+
+            cofins_xml = get_text(
+                total,
+                'nfe:vCOFINS',
+                ns
+            )
+
             ender_emit = (
                 emit.find('nfe:enderEmit', ns)
                 if emit is not None
@@ -417,6 +455,10 @@ if arquivos:
                         ns
                     ),
 
+                    "Chave Acesso": chave_acesso,
+
+                    "Status": status,
+
                     # CLIENTE
                     "Destinatario": get_text(
                         dest,
@@ -470,6 +512,11 @@ if arquivos:
                     "Aliquota ICMS XML": aliquota_xml,
 
                     "Aliquota ICMS Regra": aliquota_regra,
+
+                    # PIS / COFINS
+                    "PIS": pis_xml,
+
+                    "COFINS": cofins_xml,
 
                     # ST
                     "Tem Regra ST": (
