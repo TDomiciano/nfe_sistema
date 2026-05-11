@@ -170,38 +170,86 @@ if arquivos:
                     .replace("NFe", "")
                 )
 
-            # =========================
-            # STATUS NF
-            # =========================
-            status = get_text(
-                root,
-                './/nfe:xMotivo',
-                ns
-            )
+          # =========================
+# STATUS NF
+# =========================
+status = "SEM STATUS"
 
-            # =========================
-            # PIS / COFINS
-            # =========================
-            pis_xml = get_text(
-                total,
-                'nfe:vPIS',
-                ns
-            )
+# CANCELAMENTO
+evento_cancel = root.find('.//nfe:retEvento', ns)
 
-            cofins_xml = get_text(
-                total,
-                'nfe:vCOFINS',
-                ns
-            )
+if evento_cancel is not None:
 
-            # =========================
-            # ICMS TOTAL
-            # =========================
-            icms_total_xml = get_text(
-                total,
-                'nfe:vICMS',
-                ns
-            )
+    status_cancel = get_text(
+        evento_cancel,
+        'nfe:xMotivo',
+        ns
+    )
+
+    if status_cancel != "":
+
+        status = f"CANCELADA - {status_cancel}"
+
+else:
+
+    prot = root.find('.//nfe:protNFe', ns)
+
+    if prot is not None:
+
+        status_aut = get_text(
+            prot,
+            'nfe:xMotivo',
+            ns
+        )
+
+        if status_aut != "":
+
+            status = status_aut
+
+          # =========================
+# ICMS ITEM
+# =========================
+icms_tag = (
+    imposto.find('.//nfe:ICMS/*', ns)
+    if imposto is not None
+    else None
+)
+
+valor_icms_xml = get_text(
+    icms_tag,
+    'nfe:vICMS',
+    ns
+)
+
+# =========================
+# PIS ITEM
+# =========================
+pis_tag = (
+    imposto.find('.//nfe:PIS/*', ns)
+    if imposto is not None
+    else None
+)
+
+pis_xml = get_text(
+    pis_tag,
+    'nfe:vPIS',
+    ns
+)
+
+# =========================
+# COFINS ITEM
+# =========================
+cofins_tag = (
+    imposto.find('.//nfe:COFINS/*', ns)
+    if imposto is not None
+    else None
+)
+
+cofins_xml = get_text(
+    cofins_tag,
+    'nfe:vCOFINS',
+    ns
+)
 
             ender_emit = (
                 emit.find('nfe:enderEmit', ns)
@@ -522,7 +570,7 @@ if arquivos:
 
                     "Aliquota ICMS Regra": aliquota_regra,
 
-                    "Valor ICMS": icms_total_xml,
+                    "Valor ICMS": valor_icms_xml,
 
                     # PIS / COFINS
                     "PIS": pis_xml,
@@ -547,12 +595,12 @@ if arquivos:
                         " | ".join(divergencias)
                     ),
 
-                    # TOTAL NF
-                    "Valor NF": get_text(
-                        total,
-                        'nfe:vNF',
-                        ns
-                    )
+                    # TOTAL PRODUTO
+		"Valor Produto Total": get_text(
+  		  prod,
+ 		   'nfe:vProd',
+		    ns
+		)
 
                 })
 
