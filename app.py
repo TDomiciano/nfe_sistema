@@ -562,7 +562,7 @@ if arquivos:
                         ns
                     ),
 
-                    "Chave Acesso": chave_acesso,
+                   "Chave Acesso": f"'{chave_acesso}",
 
                     "Status": status,
 
