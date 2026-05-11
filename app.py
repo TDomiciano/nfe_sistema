@@ -129,10 +129,19 @@ arquivos = st.file_uploader(
 dados = []
 
 # =========================
+# CHAVES CANCELADAS
+# =========================
+chaves_canceladas = set()
+
+# =========================
 # PROCESSAMENTO
 # =========================
 if arquivos:
 
+    # =========================
+    # PRIMEIRO PASSO
+    # IDENTIFICA EVENTOS
+    # =========================
     for arq in arquivos:
 
         try:
@@ -144,6 +153,52 @@ if arquivos:
                 'nfe': 'http://www.portalfiscal.inf.br/nfe'
             }
 
+            xml_str = ET.tostring(
+                root,
+                encoding='unicode'
+            ).upper()
+
+            if "CANCELAMENTO HOMOLOGADO" in xml_str:
+
+                inf_evento = root.find(
+                    './/nfe:infEvento',
+                    ns
+                )
+
+                chave_evento = get_text(
+                    inf_evento,
+                    'nfe:chNFe',
+                    ns
+                )
+
+                if chave_evento != "":
+
+                    chaves_canceladas.add(
+                        chave_evento
+                    )
+
+        except:
+            pass
+
+    # =========================
+    # SEGUNDO PASSO
+    # PROCESSA NFS
+    # =========================
+    for arq in arquivos:
+
+        try:
+
+            tree = ET.parse(arq)
+            root = tree.getroot()
+
+            ns = {
+                'nfe': 'http://www.portalfiscal.inf.br/nfe'
+            }
+
+            # IGNORA XML EVENTO
+            if root.find('.//nfe:infEvento', ns) is not None:
+                continue
+
             ide = root.find('.//nfe:ide', ns)
 
             emit = root.find('.//nfe:emit', ns)
@@ -153,7 +208,10 @@ if arquivos:
             # =========================
             # CHAVE ACESSO
             # =========================
-            inf_nfe = root.find('.//nfe:infNFe', ns)
+            inf_nfe = root.find(
+                './/nfe:infNFe',
+                ns
+            )
 
             chave_acesso = ""
 
@@ -169,16 +227,16 @@ if arquivos:
             # =========================
             status = "AUTORIZADA"
 
+            if chave_acesso in chaves_canceladas:
+
+                status = "CANCELADA"
+
             xml_str = ET.tostring(
                 root,
                 encoding='unicode'
             ).upper()
 
-            if "CANCELAMENTO HOMOLOGADO" in xml_str:
-
-                status = "CANCELADA"
-
-            elif "DENEGADO" in xml_str:
+            if "DENEGADO" in xml_str:
 
                 status = "DENEGADA"
 
@@ -237,9 +295,7 @@ if arquivos:
 
                 imposto = item.find('nfe:imposto', ns)
 
-                # =========================
                 # ICMS ITEM
-                # =========================
                 icms_tag = (
                     imposto.find('.//nfe:ICMS/*', ns)
                     if imposto is not None
@@ -252,9 +308,7 @@ if arquivos:
                     ns
                 )
 
-                # =========================
                 # PIS ITEM
-                # =========================
                 pis_tag = (
                     imposto.find('.//nfe:PIS/*', ns)
                     if imposto is not None
@@ -267,9 +321,7 @@ if arquivos:
                     ns
                 )
 
-                # =========================
                 # COFINS ITEM
-                # =========================
                 cofins_tag = (
                     imposto.find('.//nfe:COFINS/*', ns)
                     if imposto is not None
@@ -282,18 +334,13 @@ if arquivos:
                     ns
                 )
 
-                # =========================
-                # ICMS
-                # =========================
                 icms = (
                     imposto.find('.//nfe:ICMS/*', ns)
                     if imposto is not None
                     else None
                 )
 
-                # =========================
                 # DADOS XML
-                # =========================
                 ncm_xml = get_text(
                     prod,
                     'nfe:NCM',
@@ -322,9 +369,7 @@ if arquivos:
                     ns
                 )
 
-                # =========================
                 # BUSCA REGRAS
-                # =========================
                 regra = buscar_regra(
                     ncm_xml,
                     uf_origem,
@@ -337,9 +382,7 @@ if arquivos:
                     uf_destino
                 )
 
-                # =========================
                 # DADOS REGRA
-                # =========================
                 if regra is not None:
 
                     cfop_regra = (
@@ -364,9 +407,7 @@ if arquivos:
                     cst_regra = ""
                     aliquota_regra = ""
 
-                # =========================
                 # VALIDACOES
-                # =========================
                 divergencias = []
 
                 if regra is None:
@@ -418,9 +459,7 @@ if arquivos:
                                 "Erro ao validar aliquota ICMS"
                             )
 
-                # =========================
-                # VALIDA ST PELO CST
-                # =========================
+                # VALIDA ST
                 csts_st = [
                     "10",
                     "30",
@@ -441,26 +480,21 @@ if arquivos:
 
                 tem_regra_st = regra_st is not None
 
-                # Tem regra mas XML sem ST
                 if tem_regra_st and not tem_st_xml:
 
                     divergencias.append(
                         "Produto deveria ter ST"
                     )
 
-                # Tem ST mas sem regra
                 if tem_st_xml and not tem_regra_st:
 
                     divergencias.append(
                         "Produto possui ST sem regra configurada"
                     )
 
-                # =========================
                 # DADOS
-                # =========================
                 dados.append({
 
-                    # NF
                     "Numero NF": get_text(
                         ide,
                         'nfe:nNF',
@@ -483,7 +517,6 @@ if arquivos:
 
                     "Status": status,
 
-                    # CLIENTE
                     "Destinatario": get_text(
                         dest,
                         'nfe:xNome',
@@ -501,7 +534,6 @@ if arquivos:
 
                     "UF Destino": uf_destino,
 
-                    # PRODUTO
                     "Produto": get_text(
                         prod,
                         'nfe:xProd',
@@ -530,7 +562,6 @@ if arquivos:
                         ns
                     ),
 
-                    # ICMS
                     "CST XML": cst_xml,
 
                     "Aliquota ICMS XML": aliquota_xml,
@@ -539,19 +570,16 @@ if arquivos:
 
                     "Valor ICMS": valor_icms_xml,
 
-                    # PIS / COFINS
                     "PIS": pis_xml,
 
                     "COFINS": cofins_xml,
 
-                    # ST
                     "Tem Regra ST": (
                         "SIM"
                         if regra_st is not None
                         else "NAO"
                     ),
 
-                    # RESULTADO
                     "Validacao": (
                         "OK"
                         if len(divergencias) == 0
@@ -562,7 +590,6 @@ if arquivos:
                         " | ".join(divergencias)
                     ),
 
-                    # TOTAL PRODUTO
                     "Valor Produto Total": get_text(
                         prod,
                         'nfe:vProd',
@@ -591,9 +618,6 @@ if not df.empty:
         use_container_width=True
     )
 
-    # =========================
-    # EXPORTA CSV
-    # =========================
     csv = df.to_csv(
         index=False,
         sep=';'
