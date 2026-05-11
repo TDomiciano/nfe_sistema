@@ -604,13 +604,7 @@ if arquivos:
                         'nfe:qCom',
                         ns
                     ),
-
-                    "Valor Produto": get_text(
-                        prod,
-                        'nfe:vProd',
-                        ns
-                    ),
-
+                  
                     "CST XML": cst_xml,
 
                     "Aliquota ICMS XML": aliquota_xml,
