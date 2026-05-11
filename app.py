@@ -179,7 +179,16 @@ if arquivos:
                 ns
             )
 
-            # =========================
+# =========================
+# ICMS TOTAL
+# =========================
+icms_total_xml = get_text(
+    total,
+    'nfe:vICMS',
+    ns
+)            
+
+	    # =========================
             # PIS / COFINS
             # =========================
             pis_xml = get_text(
@@ -512,6 +521,8 @@ if arquivos:
                     "Aliquota ICMS XML": aliquota_xml,
 
                     "Aliquota ICMS Regra": aliquota_regra,
+		
+		    "Valor ICMS": icms_total_xml,
 
                     # PIS / COFINS
                     "PIS": pis_xml,
