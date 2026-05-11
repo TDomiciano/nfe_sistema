@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import xml.etree.ElementTree as ET
 import pandas as pd
@@ -170,13 +171,11 @@ if arquivos:
                     .replace("NFe", "")
                 )
 
-          # =========================
             # =========================
             # STATUS NF
             # =========================
             status = "SEM STATUS"
 
-            # CANCELAMENTO
             evento_cancel = root.find(
                 './/nfe:retEvento',
                 ns
@@ -213,51 +212,7 @@ if arquivos:
 
                     if status_aut != "":
 
-                        status = status_aut          
-# =========================
-# ICMS ITEM
-# =========================
-icms_tag = (
-    imposto.find('.//nfe:ICMS/*', ns)
-    if imposto is not None
-    else None
-)
-
-valor_icms_xml = get_text(
-    icms_tag,
-    'nfe:vICMS',
-    ns
-)
-
-# =========================
-# PIS ITEM
-# =========================
-pis_tag = (
-    imposto.find('.//nfe:PIS/*', ns)
-    if imposto is not None
-    else None
-)
-
-pis_xml = get_text(
-    pis_tag,
-    'nfe:vPIS',
-    ns
-)
-
-# =========================
-# COFINS ITEM
-# =========================
-cofins_tag = (
-    imposto.find('.//nfe:COFINS/*', ns)
-    if imposto is not None
-    else None
-)
-
-cofins_xml = get_text(
-    cofins_tag,
-    'nfe:vCOFINS',
-    ns
-)
+                        status = status_aut
 
             ender_emit = (
                 emit.find('nfe:enderEmit', ns)
@@ -310,6 +265,54 @@ cofins_xml = get_text(
 
                 imposto = item.find('nfe:imposto', ns)
 
+                # =========================
+                # ICMS ITEM
+                # =========================
+                icms_tag = (
+                    imposto.find('.//nfe:ICMS/*', ns)
+                    if imposto is not None
+                    else None
+                )
+
+                valor_icms_xml = get_text(
+                    icms_tag,
+                    'nfe:vICMS',
+                    ns
+                )
+
+                # =========================
+                # PIS ITEM
+                # =========================
+                pis_tag = (
+                    imposto.find('.//nfe:PIS/*', ns)
+                    if imposto is not None
+                    else None
+                )
+
+                pis_xml = get_text(
+                    pis_tag,
+                    'nfe:vPIS',
+                    ns
+                )
+
+                # =========================
+                # COFINS ITEM
+                # =========================
+                cofins_tag = (
+                    imposto.find('.//nfe:COFINS/*', ns)
+                    if imposto is not None
+                    else None
+                )
+
+                cofins_xml = get_text(
+                    cofins_tag,
+                    'nfe:vCOFINS',
+                    ns
+                )
+
+                # =========================
+                # ICMS
+                # =========================
                 icms = (
                     imposto.find('.//nfe:ICMS/*', ns)
                     if imposto is not None
@@ -368,23 +371,15 @@ cofins_xml = get_text(
                 if regra is not None:
 
                     cfop_regra = (
-
                         str(regra["cfop_pj"])
-
                         if tipo_cliente == "PJ"
-
                         else str(regra["cfop_pf"])
-
                     ).replace(".0", "")
 
                     cst_regra = (
-
                         str(regra["cst_icms_pj"])
-
                         if tipo_cliente == "PJ"
-
                         else str(regra["cst_icms_pf"])
-
                     ).replace(".0", "")
 
                     aliquota_regra = str(
@@ -394,9 +389,7 @@ cofins_xml = get_text(
                 else:
 
                     cfop_regra = ""
-
                     cst_regra = ""
-
                     aliquota_regra = ""
 
                 # =========================
@@ -412,18 +405,14 @@ cofins_xml = get_text(
 
                 else:
 
-                    # =========================
                     # VALIDA CFOP
-                    # =========================
                     if cfop_xml != cfop_regra:
 
                         divergencias.append(
                             f"CFOP XML ({cfop_xml}) diferente da regra"
                         )
 
-                    # =========================
                     # VALIDA CST
-                    # =========================
                     if cst_regra != "" and cst_xml != "":
 
                         try:
@@ -440,9 +429,7 @@ cofins_xml = get_text(
                                 "Erro ao validar CST"
                             )
 
-                    # =========================
                     # VALIDA ICMS
-                    # =========================
                     if aliquota_xml != "" and aliquota_regra != "":
 
                         try:
@@ -604,11 +591,11 @@ cofins_xml = get_text(
                     ),
 
                     # TOTAL PRODUTO
-		"Valor Produto Total": get_text(
-  		  prod,
- 		   'nfe:vProd',
-		    ns
-		)
+                    "Valor Produto Total": get_text(
+                        prod,
+                        'nfe:vProd',
+                        ns
+                    )
 
                 })
 
@@ -652,3 +639,4 @@ else:
     st.info(
         "Envie XMLs para iniciar."
     )
+```
