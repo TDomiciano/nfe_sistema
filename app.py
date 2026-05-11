@@ -171,42 +171,49 @@ if arquivos:
                 )
 
           # =========================
-# STATUS NF
-# =========================
-status = "SEM STATUS"
+            # =========================
+            # STATUS NF
+            # =========================
+            status = "SEM STATUS"
 
-# CANCELAMENTO
-evento_cancel = root.find('.//nfe:retEvento', ns)
+            # CANCELAMENTO
+            evento_cancel = root.find(
+                './/nfe:retEvento',
+                ns
+            )
 
-if evento_cancel is not None:
+            if evento_cancel is not None:
 
-    status_cancel = get_text(
-        evento_cancel,
-        'nfe:xMotivo',
-        ns
-    )
+                status_cancel = get_text(
+                    evento_cancel,
+                    'nfe:xMotivo',
+                    ns
+                )
 
-    if status_cancel != "":
+                if status_cancel != "":
 
-        status = f"CANCELADA - {status_cancel}"
+                    status = (
+                        f"CANCELADA - {status_cancel}"
+                    )
 
-else:
+            else:
 
-    prot = root.find('.//nfe:protNFe', ns)
+                prot = root.find(
+                    './/nfe:protNFe',
+                    ns
+                )
 
-    if prot is not None:
+                if prot is not None:
 
-        status_aut = get_text(
-            prot,
-            'nfe:xMotivo',
-            ns
-        )
+                    status_aut = get_text(
+                        prot,
+                        'nfe:xMotivo',
+                        ns
+                    )
 
-        if status_aut != "":
+                    if status_aut != "":
 
-            status = status_aut
-
-          # =========================
+                        status = status_aut          # =========================
 # ICMS ITEM
 # =========================
 icms_tag = (
