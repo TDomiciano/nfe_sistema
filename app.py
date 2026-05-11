@@ -656,14 +656,6 @@ if not df.empty:
 
     st.subheader("📊 Resultado Fiscal")
 
- # =========================
-    # EXPORTA CSV
-    # =========================
-    csv = df.to_csv(
-        index=False,
-        sep=';'
-    ).encode('utf-8-sig')
-
     st.download_button(
         "⬇️ Baixar CSV",
         csv,
@@ -671,8 +663,7 @@ if not df.empty:
         "text/csv"
     )
 
-else:
+    st.dataframe(df)  # 👈 ESSA LINHA É ESSENCIAL
 
-    st.info(
-        "Envie XMLs para iniciar."
-    )
+else:
+    st.info("Envie XMLs para iniciar.")
