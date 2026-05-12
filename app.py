@@ -169,7 +169,6 @@ if arquivos:
 
                 chave_evento = ""
 
-                # tenta retEvento
                 ret_evento = root.find(
                     './/nfe:retEvento/nfe:infEvento',
                     ns
@@ -183,7 +182,6 @@ if arquivos:
                         ns
                     )
 
-                # fallback infEvento
                 if chave_evento == "":
 
                     inf_evento = root.find(
@@ -223,7 +221,6 @@ if arquivos:
                 'nfe': 'http://www.portalfiscal.inf.br/nfe'
             }
 
-            # IGNORA XML EVENTO
             if root.find('.//nfe:infEvento', ns) is not None:
                 continue
 
@@ -463,14 +460,12 @@ if arquivos:
 
                 else:
 
-                    # VALIDA CFOP
                     if cfop_xml != cfop_regra:
 
                         divergencias.append(
                             f"CFOP XML ({cfop_xml}) diferente da regra"
                         )
 
-                    # VALIDA CST
                     if cst_regra != "" and cst_xml != "":
 
                         try:
@@ -487,7 +482,6 @@ if arquivos:
                                 "Erro ao validar CST"
                             )
 
-                    # VALIDA ICMS
                     if aliquota_xml != "" and aliquota_regra != "":
 
                         try:
@@ -540,6 +534,19 @@ if arquivos:
                     )
 
                 # =========================
+                # VALOR PRODUTO / DESCONTO
+                # =========================
+                valor_bruto = float(
+                    get_text(prod, 'nfe:vProd', ns) or 0
+                )
+
+                valor_desc = float(
+                    get_text(prod, 'nfe:vDesc', ns) or 0
+                )
+
+                valor_final = valor_bruto - valor_desc
+
+                # =========================
                 # DADOS
                 # =========================
                 dados.append({
@@ -562,7 +569,7 @@ if arquivos:
                         ns
                     ),
 
-                   "Chave Acesso": f"'{chave_acesso}",
+                    "Chave Acesso": f"'{chave_acesso}",
 
                     "Status": status,
 
@@ -604,7 +611,7 @@ if arquivos:
                         'nfe:qCom',
                         ns
                     ),
-                  
+
                     "CST XML": cst_xml,
 
                     "Aliquota ICMS XML": aliquota_xml,
@@ -633,10 +640,9 @@ if arquivos:
                         " | ".join(divergencias)
                     ),
 
-                    "Valor Produto Total": get_text(
-                        prod,
-                        'nfe:vProd',
-                        ns
+                    "Valor Produto Total": round(
+                        valor_final,
+                        2
                     )
 
                 })
@@ -656,7 +662,10 @@ if not df.empty:
 
     st.subheader("📊 Resultado Fiscal")
 
-    csv = df.to_csv(index=False, sep=';').encode('utf-8-sig')
+    csv = df.to_csv(
+        index=False,
+        sep=';'
+    ).encode('utf-8-sig')
 
     st.download_button(
         "⬇️ Baixar CSV",
@@ -668,4 +677,7 @@ if not df.empty:
     st.dataframe(df)
 
 else:
-    st.info("Envie XMLs para iniciar.")
+
+    st.info(
+        "Envie XMLs para iniciar."
+    )
