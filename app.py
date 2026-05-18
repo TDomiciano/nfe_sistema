@@ -680,4 +680,5 @@ else:
 
     st.info(
         "Envie XMLs para iniciar."
-    )
+
+)
