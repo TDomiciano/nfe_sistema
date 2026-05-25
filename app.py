@@ -434,7 +434,27 @@ if xmls:
                     cofins_tag,
                     'nfe:vCOFINS'
                 )
+                # =========================
+                # DIFAL / FCP
+                # =========================
+                icmsufdest = (
+                    imposto.find(
+                        './/nfe:ICMSUFDest',
+                        ns
+                    )
+                    if imposto is not None
+                    else None
+                )
 
+                valor_difal = txt(
+                    icmsufdest,
+                    'nfe:vICMSUFDest'
+                )
+
+                valor_fcp = txt(
+                    icmsufdest,
+                    'nfe:vFCPUFDest'
+                )
                 # =========================
                 # REGRAS
                 # =========================
@@ -621,6 +641,9 @@ if xmls:
 
                     "COFINS": valor_cofins,
 
+                    "Valor DIFAL": valor_difal,
+
+                    "Valor FCP": valor_fcp,
                     "Tem Regra ST": (
                         "SIM"
                         if regra_st is not None
