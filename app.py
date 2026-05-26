@@ -513,48 +513,48 @@ if xmls:
                     uf_origem,
                     uf_destino
                 )
-                # =========================
+                                # =========================
                 # DIVERGENCIAS
                 # =========================
                 divergencias = []
 
                 # =========================
-		# DIFAL NORMAL
-		# =========================
-		difal_calculado = 0
+                # DIFAL NORMAL
+                # =========================
+                difal_calculado = 0
 
-		try:
+                try:
 
-	    # BASE DO DIFAL
-	    base_difal = float(
-	        txt(icmsufdest, 'nfe:vBCUFDest') or 0
-	    )
+                    # BASE DO DIFAL
+                    base_difal = float(
+                        txt(icmsufdest, 'nfe:vBCUFDest') or 0
+                    )
 
-	    # DIFERENCA ALIQUOTA
-	    diferenca_aliquota = (
-	        aliq_interna - aliq_inter
-	    )
+                    # DIFERENCA ALIQUOTA
+                    diferenca_aliquota = (
+                        aliq_interna - aliq_inter
+                    )
 
-	    # PERCENTUAL PARTILHA
-	    perc_partilha = float(
-	        txt(icmsufdest, 'nfe:pICMSInterPart') or 100
-	    )
+                    # PERCENTUAL PARTILHA
+                    perc_partilha = float(
+                        txt(icmsufdest, 'nfe:pICMSInterPart') or 100
+                    )
 
-	    if diferenca_aliquota > 0:
+                    if diferenca_aliquota > 0:
 
-	        difal_total = (
-	            base_difal *
-	            (diferenca_aliquota / 100)
-	        )
+                        difal_total = (
+                            base_difal *
+                            (diferenca_aliquota / 100)
+                        )
 
-	        difal_calculado = round(
-	            difal_total *
-	            (perc_partilha / 100),
-	            2
-	        )
+                        difal_calculado = round(
+                            difal_total *
+                            (perc_partilha / 100),
+                            2
+                        )
 
-	except:
-	    pass
+                except:
+                    pass
 
                 # =========================
                 # DIFAL XML
