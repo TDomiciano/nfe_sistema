@@ -134,16 +134,12 @@ if arquivos:
 
     for arq in arquivos:
 
-        # =========================
-        # XML NORMAL
-        # =========================
+        # XML
         if arq.name.lower().endswith(".xml"):
 
             xmls.append(arq)
 
-        # =========================
         # ZIP
-        # =========================
         elif arq.name.lower().endswith(".zip"):
 
             try:
@@ -184,7 +180,6 @@ if xmls:
     barra = st.progress(0)
 
     # =========================
-    # PRIMEIRO LOOP
     # IDENTIFICA CANCELADAS
     # =========================
     for i, arq in enumerate(xmls):
@@ -228,7 +223,6 @@ if xmls:
             pass
 
     # =========================
-    # SEGUNDO LOOP
     # PROCESSA XML
     # =========================
     for i, arq in enumerate(xmls):
@@ -254,9 +248,6 @@ if xmls:
             emit = root.find('.//nfe:emit', ns)
             dest = root.find('.//nfe:dest', ns)
 
-            # =========================
-            # ENDERECOS
-            # =========================
             emit_end = (
                 emit.find('nfe:enderEmit', ns)
                 if emit is not None
@@ -269,9 +260,6 @@ if xmls:
                 else None
             )
 
-            # =========================
-            # UFS
-            # =========================
             uf_origem = txt(
                 emit_end,
                 'nfe:UF'
@@ -282,9 +270,6 @@ if xmls:
                 'nfe:UF'
             )
 
-            # =========================
-            # CLIENTE
-            # =========================
             cnpj = txt(dest, 'nfe:CNPJ')
             cpf = txt(dest, 'nfe:CPF')
 
@@ -294,9 +279,6 @@ if xmls:
                 else "PF"
             )
 
-            # =========================
-            # CHAVE ACESSO
-            # =========================
             inf_nfe = root.find(
                 './/nfe:infNFe',
                 ns
@@ -311,26 +293,12 @@ if xmls:
                     .replace("NFe", "")
                 )
 
-            # =========================
-            # STATUS NF
-            # =========================
             status = "AUTORIZADA"
 
             if chave in canceladas:
 
                 status = "CANCELADA"
 
-            if "DENEGADO" in texto:
-
-                status = "DENEGADA"
-
-            elif "REJEICAO" in texto:
-
-                status = "REJEITADA"
-
-            # =========================
-            # ITENS
-            # =========================
             itens = root.findall(
                 './/nfe:det',
                 ns
@@ -360,30 +328,15 @@ if xmls:
                 # =========================
                 # DADOS XML
                 # =========================
-                ncm = txt(
-                    prod,
-                    'nfe:NCM'
-                )
+                ncm = txt(prod, 'nfe:NCM')
 
-                cfop = txt(
-                    prod,
-                    'nfe:CFOP'
-                )
+                cfop = txt(prod, 'nfe:CFOP')
 
-                produto = txt(
-                    prod,
-                    'nfe:xProd'
-                )
+                produto = txt(prod, 'nfe:xProd')
 
-                codigo = txt(
-                    prod,
-                    'nfe:cProd'
-                )
+                codigo = txt(prod, 'nfe:cProd')
 
-                quantidade = txt(
-                    prod,
-                    'nfe:qCom'
-                )
+                quantidade = txt(prod, 'nfe:qCom')
 
                 cst = (
                     txt(icms, 'nfe:CST')
@@ -434,6 +387,7 @@ if xmls:
                     cofins_tag,
                     'nfe:vCOFINS'
                 )
+
                 # =========================
                 # DIFAL / FCP
                 # =========================
@@ -455,51 +409,17 @@ if xmls:
                     icmsufdest,
                     'nfe:vFCPUFDest'
                 )
-                # =========================
-                # CALCULO DIFAL BASE DUPLA
-                # =========================
-                vprod = float(
-                    txt(prod, 'nfe:vProd') or 0
-                )
 
-                vfrete = float(
-                    txt(prod, 'nfe:vFrete') or 0
-                )
-
-                vseg = float(
-                    txt(prod, 'nfe:vSeg') or 0
-                )
-
-                voutro = float(
-                    txt(prod, 'nfe:vOutro') or 0
-                )
-
-                vdesc = float(
-                    txt(prod, 'nfe:vDesc') or 0
-                )
-
-                # BASE OPERACAO
-                base_operacao = (
-                    vprod +
-                    vfrete +
-                    vseg +
-                    voutro -
-                    vdesc
-                )
-
-                # ALIQUOTAS
-                aliq_inter = float(
-                    txt(icmsufdest, 'nfe:pICMSInter') or 0
-                )
-
-                aliq_interna = float(
-                    txt(icmsufdest, 'nfe:pICMSUFDest') or 0
-                )
-
-                
                 # =========================
                 # REGRAS
                 # =========================
+                regra = buscar_regra(
+                    regras_dict,
+                    ncm,
+                    uf_origem,
+                    uf_destino
+                )
+
                 regra_st = buscar_regra(
                     regras_st_dict,
                     ncm,
@@ -519,12 +439,10 @@ if xmls:
 
                 try:
 
-                    # BASE DIFAL
                     base_difal = float(
                         txt(icmsufdest, 'nfe:vBCUFDest') or 0
                     )
 
-                    # ALIQUOTAS
                     aliq_inter = float(
                         txt(icmsufdest, 'nfe:pICMSInter') or 0
                     )
@@ -533,12 +451,10 @@ if xmls:
                         txt(icmsufdest, 'nfe:pICMSUFDest') or 0
                     )
 
-                    # DIFERENCA
                     diferenca_aliquota = (
                         aliq_interna - aliq_inter
                     )
 
-                    # PARTILHA
                     perc_partilha = float(
                         txt(icmsufdest, 'nfe:pICMSInterPart') or 100
                     )
@@ -582,110 +498,10 @@ if xmls:
                     )
 
                 # =========================
-                # VALIDACOES
-                # =========================
-                if regra is None:
-
-                    divergencias.append(
-                        "SEM REGRA FISCAL"
-                    )
-
-                else:
-
-                    cfop_regra = (
-                        str(regra["cfop_pj"])
-                        if tipo_cliente == "PJ"
-                        else str(regra["cfop_pf"])
-                    ).replace(".0", "")
-
-                    aliquota_regra = str(
-                        regra["aliquota_icms"]
-                    ).replace(".0", "")
-
-                    cst_regra = (
-                        str(regra["cst_icms_pj"])
-                        if tipo_cliente == "PJ"
-                        else str(regra["cst_icms_pf"])
-                    ).replace(".0", "")
-
-                    # CFOP
-                    if cfop != cfop_regra:
-
-                        divergencias.append(
-                            f"CFOP XML ({cfop}) diferente da regra ({cfop_regra})"
-                        )
-
-                    # CST
-                    if cst != "" and cst_regra != "":
-
-                        try:
-
-                            if int(cst) != int(cst_regra):
-
-                                divergencias.append(
-                                    f"CST XML ({cst}) diferente da regra ({cst_regra})"
-                                )
-
-                        except:
-
-                            divergencias.append(
-                                "Erro ao validar CST"
-                            )
-
-                    # ICMS
-                    if aliquota != "" and aliquota_regra != "":
-
-                        try:
-
-                            if float(aliquota) != float(aliquota_regra):
-
-                                divergencias.append(
-                                    f"ICMS XML ({aliquota}) diferente da regra ({aliquota_regra})"
-                                )
-
-                        except:
-
-                            divergencias.append(
-                                "Erro ao validar aliquota"
-                            )
-
-                # =========================
-                # ST
-                # =========================
-                csts_st = [
-                    "10",
-                    "30",
-                    "60",
-                    "70"
-                ]
-
-                tem_st = cst in csts_st
-
-                if regra_st is not None and not tem_st:
-
-                    divergencias.append(
-                        "Produto deveria ter ST"
-                    )
-
-                if regra_st is None and tem_st:
-
-                    divergencias.append(
-                        "Produto possui ST sem regra"
-                    )
-
-                # =========================
                 # VALOR PRODUTO
                 # =========================
-                valor_bruto = float(
+                valor_final = float(
                     txt(prod, 'nfe:vProd') or 0
-                )
-
-                valor_desc = float(
-                    txt(prod, 'nfe:vDesc') or 0
-                )
-
-                valor_final = (
-                    valor_bruto - valor_desc
                 )
 
                 # =========================
@@ -750,14 +566,6 @@ if xmls:
 
                     "Valor DIFAL": valor_difal,
 
-                    "Tem Regra ST": (
-                        "SIM"
-                        if regra_st is not None
-                        else "NAO"
-                    ),
-
-                    "DIFAL XML": valor_difal,
-
                     "DIFAL Calculado": difal_calculado,
 
                     "Valor FCP": valor_fcp,
@@ -813,12 +621,6 @@ if dados:
     st.dataframe(
         df.head(500)
     )
-
-    if len(df) > 500:
-
-        st.warning(
-            "⚠️ Mostrando apenas os primeiros 500 registros."
-        )
 
 else:
 
