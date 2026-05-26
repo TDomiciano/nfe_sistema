@@ -24,7 +24,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("📄 Leitor Fiscal NF-e")
-
 st.info("⚠️ O sistema suporta XML e ZIP contendo XMLs.")
 
 # =========================
@@ -45,19 +44,25 @@ def carregar_regras():
     regras_st_dict = {}
 
     for _, row in regras.iterrows():
+
         chave = (
             str(row["ncm"]).replace(".0", "").strip(),
             str(row["origem"]).upper().strip(),
-            str(row["destino"]).upper().strip()
+            str(row["destino"]).upper().strip(),
+            str(row["tipo_operacao"]).upper().strip()
         )
+
         regras_dict[chave] = row.to_dict()
 
     for _, row in regras_st.iterrows():
+
         chave = (
             str(row["ncm"]).replace(".0", "").strip(),
             str(row["origem"]).upper().strip(),
-            str(row["destino"]).upper().strip()
+            str(row["destino"]).upper().strip(),
+            str(row["tipo_operacao"]).upper().strip()
         )
+
         regras_st_dict[chave] = row.to_dict()
 
     return regras_dict, regras_st_dict
@@ -77,12 +82,15 @@ def txt(elemento, tag):
 # =========================
 # BUSCA REGRA
 # =========================
-def buscar_regra(dicionario, ncm, origem, destino):
+def buscar_regra(dicionario, ncm, origem, destino, tipo_operacao):
+
     chave = (
         str(ncm).replace(".0", "").strip(),
         str(origem).upper().strip(),
-        str(destino).upper().strip()
+        str(destino).upper().strip(),
+        str(tipo_operacao).upper().strip()
     )
+
     return dicionario.get(chave)
 
 # =========================
@@ -166,6 +174,14 @@ if xmls:
             uf_origem = txt(emit_end, 'nfe:UF')
             uf_destino = txt(dest_end, 'nfe:UF')
 
+            # =========================
+            # TIPO OPERACAO
+            # =========================
+            if uf_origem == uf_destino:
+                tipo_operacao = "INTERNA"
+            else:
+                tipo_operacao = "INTERESTADUAL"
+
             cnpj = txt(dest, 'nfe:CNPJ')
             cpf = txt(dest, 'nfe:CPF')
 
@@ -192,7 +208,27 @@ if xmls:
                 quantidade = txt(prod, 'nfe:qCom')
 
                 cst = txt(icms, 'nfe:CST') or txt(icms, 'nfe:CSOSN')
-                aliquota = txt(icms, 'nfe:pICMS')
+
+                # =========================
+                # BUSCA REGRA FISCAL
+                # =========================
+                regra = buscar_regra(
+                    regras_dict,
+                    ncm,
+                    uf_origem,
+                    uf_destino,
+                    tipo_operacao
+                )
+
+                if regra:
+                    aliquota = float(regra.get("aliquota", 0))
+                    cfop_final = regra.get("cfop_pf") if tipo_cliente == "PF" else regra.get("cfop_pj")
+                    cst_final = regra.get("cst_icms")
+                else:
+                    aliquota = float(txt(icms, 'nfe:pICMS') or 0)
+                    cfop_final = cfop
+                    cst_final = cst
+
                 valor_icms = txt(icms, 'nfe:vICMS')
 
                 # =========================
@@ -205,7 +241,7 @@ if xmls:
                 valor_cofins = txt(cofins_tag, 'nfe:vCOFINS')
 
                 # =========================
-                # DIFAL (CORRIGIDO)
+                # DIFAL
                 # =========================
                 icmsufdest = imposto.find('.//nfe:ICMSUFDest', ns) if imposto is not None else None
 
@@ -248,21 +284,23 @@ if xmls:
 
                     "UF Origem": uf_origem,
                     "UF Destino": uf_destino,
+                    "Tipo Operacao": tipo_operacao,
 
                     "Produto": produto,
                     "Codigo": codigo,
                     "Quantidade": quantidade,
                     "NCM": ncm,
-                    "CFOP": cfop,
-                    "CST": cst,
+                    "CFOP": cfop_final,
+                    "CST": cst_final,
 
                     "ICMS": valor_icms,
+                    "Aliquota ICMS": aliquota,
+
                     "PIS": valor_pis,
                     "COFINS": valor_cofins,
 
                     "DIFAL XML": valor_difal,
                     "DIFAL Calculado": difal_calculado,
-
                     "FCP": fcp,
 
                     "Validacao": "OK" if not divergencias else "DIVERGENTE",
