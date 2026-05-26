@@ -46,44 +46,6 @@ def carregar_regras():
 regras, regras_st = carregar_regras()
 
 # =========================
-# TABELA ICMS
-# =========================
-@st.cache_data
-def carregar_tabela_icms():
-
-    tabela_icms = pd.read_excel(
-        "aliquotas.xlsx"
-    )
-
-    tabela_icms = tabela_icms.set_index(
-        tabela_icms.columns[0]
-    )
-
-    tabela_icms.columns = (
-        tabela_icms.columns
-        .astype(str)
-        .str.upper()
-        .str.strip()
-    )
-
-    tabela_icms.index = (
-        tabela_icms.index
-        .astype(str)
-        .str.upper()
-        .str.strip()
-    )
-
-    tabela_icms = tabela_icms.apply(
-        pd.to_numeric,
-        errors="coerce"
-    )
-
-    return tabela_icms
-
-
-tabela_icms = carregar_tabela_icms()
-
-# =========================
 # FUNÇÃO SEGURA XML
 # =========================
 def get_text(element, tag, ns):
@@ -165,27 +127,6 @@ def buscar_regra_st(ncm, origem, destino):
 
 
 # =========================
-# BUSCA ALIQUOTAS
-# =========================
-def buscar_aliquotas(origem, destino):
-
-    origem = str(origem).upper().strip()
-    destino = str(destino).upper().strip()
-
-    # INTERNA ORIGEM
-    aliq_interna_origem = float(
-        tabela_icms.loc[origem, origem]
-    )
-
-    # INTERESTADUAL
-    aliq_inter = float(
-        tabela_icms.loc[origem, destino]
-    )
-
-    return aliq_interna_origem, aliq_inter
-
-
-# =========================
 # INTERFACE
 # =========================
 st.title("📄 Leitor Fiscal NF-e")
@@ -209,12 +150,16 @@ if uploads:
 
     for upload in uploads:
 
-        # XML
+        # =========================
+        # XML NORMAL
+        # =========================
         if upload.name.lower().endswith(".xml"):
 
             arquivos.append(upload)
 
-        # ZIP
+        # =========================
+        # ARQUIVO ZIP
+        # =========================
         elif upload.name.lower().endswith(".zip"):
 
             try:
@@ -253,10 +198,11 @@ if arquivos:
 
     total_arquivos = len(arquivos)
 
-    st.write(
-        f"📦 Total de arquivos encontrados: {total_arquivos}"
-    )
+    st.write(f"📦 Total de arquivos encontrados: {total_arquivos}")
 
+    # =========================
+    # ALERTA MUITOS XMLS
+    # =========================
     if total_arquivos > 5000:
 
         st.warning(
@@ -267,7 +213,8 @@ if arquivos:
     barra = st.progress(0)
 
     # =========================
-    # LOOP CANCELAMENTO
+    # PRIMEIRO LOOP
+    # IDENTIFICA CANCELAMENTOS
     # =========================
     for i, arq in enumerate(arquivos):
 
@@ -287,6 +234,9 @@ if arquivos:
                 encoding='unicode'
             ).upper()
 
+            # =========================
+            # EVENTO CANCELAMENTO
+            # =========================
             if (
                 "CANCELAMENTO" in xml_str
                 and
@@ -327,6 +277,9 @@ if arquivos:
                         chave_evento
                     )
 
+            # =========================
+            # LIMPA MEMÓRIA
+            # =========================
             del tree
             del root
 
@@ -338,7 +291,8 @@ if arquivos:
             pass
 
     # =========================
-    # LOOP XMLS
+    # SEGUNDO LOOP
+    # PROCESSA NFS
     # =========================
     for i, arq in enumerate(arquivos):
 
@@ -358,7 +312,9 @@ if arquivos:
                 continue
 
             ide = root.find('.//nfe:ide', ns)
+
             emit = root.find('.//nfe:emit', ns)
+
             dest = root.find('.//nfe:dest', ns)
 
             # =========================
@@ -486,103 +442,6 @@ if arquivos:
                 )
 
                 # =========================
-                # DIFAL XML
-                # =========================
-                icmsufdest = (
-                    imposto.find('.//nfe:ICMSUFDest', ns)
-                    if imposto is not None
-                    else None
-                )
-
-                valor_difal_xml = get_text(
-                    icmsufdest,
-                    'nfe:vICMSUFDest',
-                    ns
-                )
-
-                try:
-
-                    difal_xml = float(
-                        valor_difal_xml or 0
-                    )
-
-                except:
-
-                    difal_xml = 0
-
-                # =========================
-                # FCP XML
-                # =========================
-                try:
-
-                    fcp_xml = float(
-                        get_text(
-                            icmsufdest,
-                            'nfe:vFCPUFDest',
-                            ns
-                        ) or 0
-                    )
-
-                except:
-
-                    fcp_xml = 0
-
-                # =========================
-                # CALCULO DIFAL
-                # =========================
-                difal_calculado = 0
-
-                aliq_interna_origem = 0
-                aliq_inter = 0
-
-                try:
-
-                    aliq_interna_origem, aliq_inter = buscar_aliquotas(
-                        uf_origem,
-                        uf_destino
-                    )
-
-                    aliq_interna_origem = (
-                        aliq_interna_origem / 100
-                    )
-
-                    aliq_inter = (
-                        aliq_inter / 100
-                    )
-
-                    valor_base = float(
-                        get_text(
-                            prod,
-                            'nfe:vProd',
-                            ns
-                        ) or 0
-                    )
-
-                    # BASE DUPLA
-                    if aliq_interna_origem > aliq_inter:
-
-                        difal_calculado = round(
-                            (
-                                valor_base *
-                                (
-                                    aliq_interna_origem -
-                                    aliq_inter
-                                )
-                            )
-                            /
-                            (
-                                1 - aliq_interna_origem
-                            ),
-                            2
-                        )
-
-                except Exception as e:
-
-                    st.error(
-                        f"Erro DIFAL {uf_origem}->{uf_destino}: {e}"
-                    )
-
-                # =========================
                 # BUSCA REGRA
                 # =========================
                 regra = buscar_regra(
@@ -592,15 +451,6 @@ if arquivos:
                 )
 
                 divergencias = []
-
-                # =========================
-                # VALIDACAO DIFAL
-                # =========================
-                if abs(difal_xml - difal_calculado) > 1:
-
-                    divergencias.append(
-                        f"DIFAL XML ({difal_xml}) diferente do calculado ({difal_calculado})"
-                    )
 
                 if regra is not None:
 
@@ -668,42 +518,6 @@ if arquivos:
 
                     "Aliquota ICMS XML": aliquota_xml,
 
-                    "UF Origem": uf_origem,
-
-                    "UF Destino": uf_destino,
-
-                    "Aliquota Interna Origem": round(
-                        aliq_interna_origem * 100,
-                        2
-                    ),
-
-                    "Aliquota Interestadual": round(
-                        aliq_inter * 100,
-                        2
-                    ),
-
-                    "Valor Produto": round(
-                        float(
-                            get_text(prod, 'nfe:vProd', ns) or 0
-                        ),
-                        2
-                    ),
-
-                    "DIFAL XML": round(
-                        difal_xml,
-                        2
-                    ),
-
-                    "DIFAL Calculado": round(
-                        difal_calculado,
-                        2
-                    ),
-
-                    "FCP XML": round(
-                        fcp_xml,
-                        2
-                    ),
-
                     "Status": status,
 
                     "Validacao": (
@@ -718,6 +532,9 @@ if arquivos:
 
                 })
 
+            # =========================
+            # LIMPA MEMÓRIA
+            # =========================
             del tree
             del root
             del itens
@@ -757,6 +574,9 @@ if not df.empty:
         "text/csv"
     )
 
+    # =========================
+    # LIMITA EXIBIÇÃO
+    # =========================
     st.dataframe(
         df.head(500)
     )
