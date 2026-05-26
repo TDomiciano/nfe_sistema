@@ -3,15 +3,13 @@ import pandas as pd
 from lxml import etree as ET
 import zipfile
 import io
+import os
 
 # =========================
 # CONFIG PAGINA
 # =========================
 st.set_page_config(layout="wide")
 
-# =========================
-# CSS
-# =========================
 st.markdown("""
 <style>
 .block-container {
@@ -24,7 +22,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("📄 Leitor Fiscal NF-e")
-st.info("⚠️ O sistema suporta XML e ZIP contendo XMLs.")
+st.info("⚠️ Suporta XML e ZIP contendo XMLs")
 
 # =========================
 # NAMESPACE
@@ -32,13 +30,19 @@ st.info("⚠️ O sistema suporta XML e ZIP contendo XMLs.")
 ns = {"nfe": "http://www.portalfiscal.inf.br/nfe"}
 
 # =========================
+# CAMINHO SEGURO PLANILHA
+# =========================
+BASE_DIR = os.path.dirname(__file__)
+PLANILHA = os.path.join(BASE_DIR, "conf_fiscais.xlsx")
+
+# =========================
 # REGRAS
 # =========================
 @st.cache_data
 def carregar_regras():
 
-    regras = pd.read_excel("conf_fiscais.xlsx", sheet_name="Config Fiscal")
-    regras_st = pd.read_excel("conf_fiscais.xlsx", sheet_name="Config ST")
+    regras = pd.read_excel(PLANILHA, sheet_name="Config Fiscal")
+    regras_st = pd.read_excel(PLANILHA, sheet_name="Config ST")
 
     regras_dict = {}
     regras_st_dict = {}
@@ -80,7 +84,7 @@ def txt(elemento, tag):
     return achou.text if achou is not None else ""
 
 # =========================
-# BUSCA REGRA
+# BUSCAR REGRA
 # =========================
 def buscar_regra(dicionario, ncm, origem, destino, tipo_operacao):
 
@@ -122,6 +126,9 @@ if arquivos:
 dados = []
 canceladas = set()
 
+# =========================
+# PROCESSAMENTO
+# =========================
 if xmls:
 
     st.success(f"📦 {len(xmls)} XMLs encontrados")
@@ -151,7 +158,7 @@ if xmls:
             pass
 
     # =========================
-    # PROCESSAMENTO
+    # NF-E
     # =========================
     for i, arq in enumerate(xmls):
 
@@ -210,7 +217,7 @@ if xmls:
                 cst = txt(icms, 'nfe:CST') or txt(icms, 'nfe:CSOSN')
 
                 # =========================
-                # BUSCA REGRA FISCAL
+                # REGRA FISCAL
                 # =========================
                 regra = buscar_regra(
                     regras_dict,
@@ -272,23 +279,21 @@ if xmls:
 
                 dados.append({
 
-                    "Numero NF": txt(ide, 'nfe:nNF'),
+                    "NF": txt(ide, 'nfe:nNF'),
                     "Serie": txt(ide, 'nfe:serie'),
                     "Emissao": txt(ide, 'nfe:dhEmi'),
                     "Chave": chave,
                     "Status": status,
 
                     "Destinatario": txt(dest, 'nfe:xNome'),
-                    "CPF/CNPJ": cnpj or cpf,
-                    "Tipo": tipo_cliente,
+                    "Documento": cnpj or cpf,
+                    "Tipo Cliente": tipo_cliente,
 
                     "UF Origem": uf_origem,
                     "UF Destino": uf_destino,
                     "Tipo Operacao": tipo_operacao,
 
                     "Produto": produto,
-                    "Codigo": codigo,
-                    "Quantidade": quantidade,
                     "NCM": ncm,
                     "CFOP": cfop_final,
                     "CST": cst_final,
