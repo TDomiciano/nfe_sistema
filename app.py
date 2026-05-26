@@ -486,7 +486,7 @@ if xmls:
 
                 except:
 
-                difal_xml = 0
+                	difal_xml = 0
 
                 # =========================
                 # VALIDACAO DIFAL
