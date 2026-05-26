@@ -456,6 +456,103 @@ if xmls:
                     'nfe:vFCPUFDest'
                 )
                 # =========================
+                # CALCULO DIFAL BASE DUPLA
+                # =========================
+                vprod = float(
+                    txt(prod, 'nfe:vProd') or 0
+                )
+
+                vfrete = float(
+                    txt(prod, 'nfe:vFrete') or 0
+                )
+
+                vseg = float(
+                    txt(prod, 'nfe:vSeg') or 0
+                )
+
+                voutro = float(
+                    txt(prod, 'nfe:vOutro') or 0
+                )
+
+                vdesc = float(
+                    txt(prod, 'nfe:vDesc') or 0
+                )
+
+                # BASE OPERACAO
+                base_operacao = (
+                    vprod +
+                    vfrete +
+                    vseg +
+                    voutro -
+                    vdesc
+                )
+
+                # ALIQUOTAS
+                aliq_inter = float(
+                    txt(icmsufdest, 'nfe:pICMSInter') or 0
+                )
+
+                aliq_interna = float(
+                    txt(icmsufdest, 'nfe:pICMSUFDest') or 0
+                )
+
+                # =========================
+                # DIFAL BASE DUPLA
+                # FORMULA:
+                # Base dupla = Base / (1 - aliquota interna)
+                # Difal = (Base dupla × aliq interna)
+                #         - (Base operação × aliq interestadual)
+                # =========================
+                difal_calculado = 0
+
+                try:
+
+                    if aliq_interna > 0:
+
+                        base_dupla = (
+                            base_operacao /
+                            (1 - (aliq_interna / 100))
+                        )
+
+                        valor_interno = (
+                            base_dupla *
+                            (aliq_interna / 100)
+                        )
+
+                        valor_interestadual = (
+                            base_operacao *
+                            (aliq_inter / 100)
+                        )
+
+                        difal_calculado = round(
+                            valor_interno -
+                            valor_interestadual,
+                            2
+                        )
+
+                except:
+                    pass
+
+                # DIFAL XML
+                try:
+
+                    difal_xml = float(
+                        valor_difal or 0
+                    )
+
+                except:
+
+                    difal_xml = 0
+
+                # =========================
+                # VALIDACAO DIFAL
+                # =========================
+                if round(difal_xml, 2) != round(difal_calculado, 2):
+
+                    divergencias.append(
+                        f"DIFAL XML ({difal_xml}) diferente do calculado ({difal_calculado})"
+                    )
+                # =========================
                 # REGRAS
                 # =========================
                 regra = buscar_regra(
@@ -649,6 +746,12 @@ if xmls:
                         if regra_st is not None
                         else "NAO"
                     ),
+
+                    "DIFAL XML": valor_difal,
+
+                    "DIFAL Calculado": difal_calculado,
+
+                    "Valor FCP": valor_fcp,
 
                     "Validacao": (
                         "OK"
