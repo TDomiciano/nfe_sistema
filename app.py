@@ -61,35 +61,35 @@ def carregar_regras():
     try:
 
         tabela_icms = pd.read_excel(
-    "aliquotas.xlsx"
-)
+            "aliquotas.xlsx"
+        )
 
-# primeira coluna vira índice
-tabela_icms = tabela_icms.set_index(
-    tabela_icms.columns[0]
-)
+        # primeira coluna vira indice
+        tabela_icms = tabela_icms.set_index(
+            tabela_icms.columns[0]
+        )
 
-# limpa colunas
-tabela_icms.columns = (
-    tabela_icms.columns
-    .astype(str)
-    .str.upper()
-    .str.strip()
-)
+        # limpa colunas
+        tabela_icms.columns = (
+            tabela_icms.columns
+            .astype(str)
+            .str.upper()
+            .str.strip()
+        )
 
-# limpa index
-tabela_icms.index = (
-    tabela_icms.index
-    .astype(str)
-    .str.upper()
-    .str.strip()
-)
+        # limpa index
+        tabela_icms.index = (
+            tabela_icms.index
+            .astype(str)
+            .str.upper()
+            .str.strip()
+        )
 
-# converte tudo para numero
-tabela_icms = tabela_icms.apply(
-    pd.to_numeric,
-    errors="coerce"
-)
+        # converte tudo para numero
+        tabela_icms = tabela_icms.apply(
+            pd.to_numeric,
+            errors="coerce"
+        )
 
     except Exception as e:
 
@@ -132,6 +132,11 @@ tabela_icms = tabela_icms.apply(
 
 
 regras_dict, regras_st_dict, tabela_icms = carregar_regras()
+
+# =========================
+# DEBUG TABELA
+# =========================
+st.write(tabela_icms)
 
 # =========================
 # FUNÇÃO SEGURA XML
@@ -252,49 +257,6 @@ if xmls:
     barra = st.progress(0)
 
     # =========================
-    # IDENTIFICA CANCELADAS
-    # =========================
-    for i, arq in enumerate(xmls):
-
-        try:
-
-            arq.seek(0)
-
-            conteudo = arq.read()
-
-            texto = conteudo.decode(
-                "utf-8",
-                errors="ignore"
-            ).upper()
-
-            if (
-                "CANCELAMENTO" in texto
-                and
-                "110111" in texto
-            ):
-
-                root = ET.fromstring(conteudo)
-
-                inf_evento = root.find(
-                    ".//nfe:infEvento",
-                    ns
-                )
-
-                chave = txt(
-                    inf_evento,
-                    "nfe:chNFe"
-                )
-
-                if chave != "":
-
-                    canceladas.add(chave)
-
-            barra.progress((i + 1) / total)
-
-        except:
-            pass
-
-    # =========================
     # PROCESSA XML
     # =========================
     for i, arq in enumerate(xmls):
@@ -306,10 +268,6 @@ if xmls:
             conteudo = arq.read()
 
             root = ET.fromstring(conteudo)
-
-            # IGNORA EVENTOS
-            if root.find('.//nfe:infEvento', ns) is not None:
-                continue
 
             ide = root.find('.//nfe:ide', ns)
             emit = root.find('.//nfe:emit', ns)
@@ -337,35 +295,6 @@ if xmls:
                 'nfe:UF'
             )
 
-            cnpj = txt(dest, 'nfe:CNPJ')
-            cpf = txt(dest, 'nfe:CPF')
-
-            tipo_cliente = (
-                "PJ"
-                if cnpj != ""
-                else "PF"
-            )
-
-            inf_nfe = root.find(
-                './/nfe:infNFe',
-                ns
-            )
-
-            chave = ""
-
-            if inf_nfe is not None:
-
-                chave = (
-                    inf_nfe.attrib.get("Id", "")
-                    .replace("NFe", "")
-                )
-
-            status = "AUTORIZADA"
-
-            if chave in canceladas:
-
-                status = "CANCELADA"
-
             itens = root.findall(
                 './/nfe:det',
                 ns
@@ -381,78 +310,6 @@ if xmls:
                 imposto = item.find(
                     'nfe:imposto',
                     ns
-                )
-
-                icms = (
-                    imposto.find(
-                        './/nfe:ICMS/*',
-                        ns
-                    )
-                    if imposto is not None
-                    else None
-                )
-
-                # =========================
-                # DADOS XML
-                # =========================
-                ncm = txt(prod, 'nfe:NCM')
-
-                cfop = txt(prod, 'nfe:CFOP')
-
-                produto = txt(prod, 'nfe:xProd')
-
-                codigo = txt(prod, 'nfe:cProd')
-
-                quantidade = txt(prod, 'nfe:qCom')
-
-                cst = (
-                    txt(icms, 'nfe:CST')
-                    or
-                    txt(icms, 'nfe:CSOSN')
-                )
-
-                aliquota = txt(
-                    icms,
-                    'nfe:pICMS'
-                )
-
-                valor_icms = txt(
-                    icms,
-                    'nfe:vICMS'
-                )
-
-                # =========================
-                # PIS
-                # =========================
-                pis_tag = (
-                    imposto.find(
-                        './/nfe:PIS/*',
-                        ns
-                    )
-                    if imposto is not None
-                    else None
-                )
-
-                valor_pis = txt(
-                    pis_tag,
-                    'nfe:vPIS'
-                )
-
-                # =========================
-                # COFINS
-                # =========================
-                cofins_tag = (
-                    imposto.find(
-                        './/nfe:COFINS/*',
-                        ns
-                    )
-                    if imposto is not None
-                    else None
-                )
-
-                valor_cofins = txt(
-                    cofins_tag,
-                    'nfe:vCOFINS'
                 )
 
                 # =========================
@@ -473,14 +330,9 @@ if xmls:
                         txt(icmsufdest, 'nfe:vICMSUFDest') or 0
                     )
 
-                    valor_fcp = float(
-                        txt(icmsufdest, 'nfe:vFCPUFDest') or 0
-                    )
-
                 except:
 
                     difal_xml = 0
-                    valor_fcp = 0
 
                 # =========================
                 # DIFAL CALCULADO
@@ -517,8 +369,11 @@ if xmls:
                             2
                         )
 
-                except:
-                    difal_calculado = 0
+                except Exception as e:
+
+                    st.error(
+                        f"Erro calculo DIFAL: {e}"
+                    )
 
                 # =========================
                 # DIVERGENCIAS
@@ -536,81 +391,30 @@ if xmls:
                     )
 
                 # =========================
-                # VALOR PRODUTO
-                # =========================
-                valor_final = float(
-                    txt(prod, 'nfe:vProd') or 0
-                )
-
-                # =========================
                 # DADOS
                 # =========================
                 dados.append({
-
-                    "Numero NF": txt(
-                        ide,
-                        'nfe:nNF'
-                    ),
-
-                    "Serie": txt(
-                        ide,
-                        'nfe:serie'
-                    ),
-
-                    "Emissao": txt(
-                        ide,
-                        'nfe:dhEmi'
-                    ),
-
-                    "Chave Acesso": f"'{chave}",
-
-                    "Status": status,
-
-                    "Destinatario": txt(
-                        dest,
-                        'nfe:xNome'
-                    ),
-
-                    "CPF/CNPJ": (
-                        cnpj if cnpj != ""
-                        else cpf
-                    ),
-
-                    "Tipo Cliente": tipo_cliente,
 
                     "UF Origem": uf_origem,
 
                     "UF Destino": uf_destino,
 
-                    "Produto": produto,
+                    "Produto": txt(
+                        prod,
+                        'nfe:xProd'
+                    ),
 
-                    "Codigo": codigo,
-
-                    "Quantidade": quantidade,
-
-                    "NCM": ncm,
-
-                    "CFOP XML": cfop,
-
-                    "CST XML": cst,
-
-                    "Aliquota ICMS XML": aliquota,
-
-                    "Valor ICMS": valor_icms,
-
-                    "PIS": valor_pis,
-
-                    "COFINS": valor_cofins,
-
-                    "DIFAL XML": difal_xml,
-
-                    "DIFAL Calculado": difal_calculado,
-
-                    "Valor FCP": valor_fcp,
+                    "Valor Produto": float(
+                        txt(prod, 'nfe:vProd') or 0
+                    ),
 
                     "Aliquota Interna": aliq_interna * 100,
 
                     "Aliquota Interestadual": aliq_inter * 100,
+
+                    "DIFAL XML": difal_xml,
+
+                    "DIFAL Calculado": difal_calculado,
 
                     "Validacao": (
                         "OK"
@@ -620,11 +424,6 @@ if xmls:
 
                     "Divergencias": (
                         " | ".join(divergencias)
-                    ),
-
-                    "Valor Produto Total": round(
-                        valor_final,
-                        2
                     )
 
                 })
@@ -660,9 +459,7 @@ if dados:
         "text/csv"
     )
 
-    st.dataframe(
-        df.head(500)
-    )
+    st.dataframe(df)
 
 else:
 
