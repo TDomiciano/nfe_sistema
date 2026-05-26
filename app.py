@@ -496,7 +496,34 @@ if xmls:
                     txt(icmsufdest, 'nfe:pICMSUFDest') or 0
                 )
 
+                
                 # =========================
+                # VALIDACAO DIFAL
+                # =========================
+                if round(difal_xml, 2) != round(difal_calculado, 2):
+
+                    divergencias.append(
+                        f"DIFAL XML ({difal_xml}) diferente do calculado ({difal_calculado})"
+                    )
+                # =========================
+                # REGRAS
+                # =========================
+                regra = buscar_regra(
+                    regras_dict,
+                    ncm,
+                    uf_origem,
+                    uf_destino
+                )
+
+                regra_st = buscar_regra(
+                    regras_st_dict,
+                    ncm,
+                    uf_origem,
+                    uf_destino
+                )
+
+                divergencias = []
+# =========================
                 # DIFAL BASE DUPLA
                 # FORMULA:
                 # Base dupla = Base / (1 - aliquota interna)
@@ -543,33 +570,7 @@ if xmls:
                 except:
 
                     difal_xml = 0
-
-                # =========================
-                # VALIDACAO DIFAL
-                # =========================
-                if round(difal_xml, 2) != round(difal_calculado, 2):
-
-                    divergencias.append(
-                        f"DIFAL XML ({difal_xml}) diferente do calculado ({difal_calculado})"
-                    )
-                # =========================
-                # REGRAS
-                # =========================
-                regra = buscar_regra(
-                    regras_dict,
-                    ncm,
-                    uf_origem,
-                    uf_destino
-                )
-
-                regra_st = buscar_regra(
-                    regras_st_dict,
-                    ncm,
-                    uf_origem,
-                    uf_destino
-                )
-
-                divergencias = []
+)
 
                 # =========================
                 # VALIDACOES
