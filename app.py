@@ -486,23 +486,23 @@ if xmls:
 
                 except:
 
-                    difal_xml = 0
+                difal_xml = 0
 
                 # =========================
                 # VALIDACAO DIFAL
                 # =========================
                 if difal_calculado > 0:
 
-    diferenca = abs(
-        difal_xml - difal_calculado
-    )
+                    diferenca = abs(
+                        difal_xml - difal_calculado
+                    )
 
-    # tolerancia arredondamento
-    if diferenca > 1:
+                    # tolerancia arredondamento
+                    if diferenca > 1:
 
-        divergencias.append(
-            f"DIFAL XML ({difal_xml}) diferente do calculado ({difal_calculado})"
-        )
+                        divergencias.append(
+                            f"DIFAL XML ({difal_xml}) diferente do calculado ({difal_calculado})"
+                        )
 
                 # =========================
                 # VALOR PRODUTO
