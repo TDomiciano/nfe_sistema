@@ -475,9 +475,6 @@ if xmls:
                 except:
                     pass
 
-                                except:
-                    pass
-
                 # =========================
                 # DIFAL XML
                 # =========================
