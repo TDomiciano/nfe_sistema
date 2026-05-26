@@ -30,7 +30,7 @@ st.info("⚠️ Suporta XML e ZIP contendo XMLs")
 ns = {"nfe": "http://www.portalfiscal.inf.br/nfe"}
 
 # =========================
-# CAMINHO SEGURO PLANILHA
+# CAMINHO PLANILHA
 # =========================
 BASE_DIR = os.path.dirname(__file__)
 PLANILHA = os.path.join(BASE_DIR, "conf_fiscais.xlsx")
@@ -44,6 +44,10 @@ def carregar_regras():
     regras = pd.read_excel(PLANILHA, sheet_name="Config Fiscal")
     regras_st = pd.read_excel(PLANILHA, sheet_name="Config ST")
 
+    # 🔥 EVITA KEYERROR (remove espaços e padroniza)
+    regras.columns = regras.columns.str.strip().str.lower()
+    regras_st.columns = regras_st.columns.str.strip().str.lower()
+
     regras_dict = {}
     regras_st_dict = {}
 
@@ -53,7 +57,7 @@ def carregar_regras():
             str(row["ncm"]).replace(".0", "").strip(),
             str(row["origem"]).upper().strip(),
             str(row["destino"]).upper().strip(),
-            str(row["tipo_operacao"]).upper().strip()
+            str(row.get("tipo_operacao", "INTERESTADUAL")).upper().strip()
         )
 
         regras_dict[chave] = row.to_dict()
@@ -64,7 +68,7 @@ def carregar_regras():
             str(row["ncm"]).replace(".0", "").strip(),
             str(row["origem"]).upper().strip(),
             str(row["destino"]).upper().strip(),
-            str(row["tipo_operacao"]).upper().strip()
+            str(row.get("tipo_operacao", "INTERESTADUAL")).upper().strip()
         )
 
         regras_st_dict[chave] = row.to_dict()
@@ -75,7 +79,7 @@ def carregar_regras():
 regras_dict, regras_st_dict = carregar_regras()
 
 # =========================
-# FUNÇÃO SEGURA XML
+# FUNÇÃO XML SEGURA
 # =========================
 def txt(elemento, tag):
     if elemento is None:
@@ -158,7 +162,7 @@ if xmls:
             pass
 
     # =========================
-    # NF-E
+    # NF-e
     # =========================
     for i, arq in enumerate(xmls):
 
