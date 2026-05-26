@@ -519,26 +519,42 @@ if xmls:
                 divergencias = []
 
                 # =========================
-                # DIFAL NORMAL
-                # =========================
-                difal_calculado = 0
+		# DIFAL NORMAL
+		# =========================
+		difal_calculado = 0
 
-                try:
+		try:
 
-                    if aliq_interna > aliq_inter:
+	    # BASE DO DIFAL
+	    base_difal = float(
+	        txt(icmsufdest, 'nfe:vBCUFDest') or 0
+	    )
 
-                        diferenca_aliquota = (
-                            aliq_interna - aliq_inter
-                        )
+	    # DIFERENCA ALIQUOTA
+	    diferenca_aliquota = (
+	        aliq_interna - aliq_inter
+	    )
 
-                        difal_calculado = round(
-                            base_operacao *
-                            (diferenca_aliquota / 100),
-                            2
-                        )
+	    # PERCENTUAL PARTILHA
+	    perc_partilha = float(
+	        txt(icmsufdest, 'nfe:pICMSInterPart') or 100
+	    )
 
-                except:
-                    pass
+	    if diferenca_aliquota > 0:
+
+	        difal_total = (
+	            base_difal *
+	            (diferenca_aliquota / 100)
+	        )
+
+	        difal_calculado = round(
+	            difal_total *
+	            (perc_partilha / 100),
+	            2
+	        )
+
+	except:
+	    pass
 
                 # =========================
                 # DIFAL XML
