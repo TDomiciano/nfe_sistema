@@ -40,14 +40,11 @@ ns = {
 }
 
 # =========================
-# CARREGA TABELAS
+# CARREGA TABELA ICMS
 # =========================
 @st.cache_data
-def carregar_tabelas():
+def carregar_tabela_icms():
 
-    # =========================
-    # PLANILHA ALIQUOTAS
-    # =========================
     tabela_icms = pd.read_excel(
         "aliquotas.xlsx"
     )
@@ -73,7 +70,7 @@ def carregar_tabelas():
         .str.strip()
     )
 
-    # CONVERTE NUMEROS
+    # CONVERTE PARA NUMEROS
     tabela_icms = tabela_icms.apply(
         pd.to_numeric,
         errors="coerce"
@@ -82,7 +79,7 @@ def carregar_tabelas():
     return tabela_icms
 
 
-tabela_icms = carregar_tabelas()
+tabela_icms = carregar_tabela_icms()
 
 # =========================
 # FUNÇÃO XML
@@ -105,15 +102,17 @@ def buscar_aliquotas(origem, destino):
     origem = str(origem).upper().strip()
     destino = str(destino).upper().strip()
 
-    aliq_origem = float(
-        tabela_icms.loc[origem, "ALIQUOTA"]
+    # INTERNA ORIGEM
+    aliq_interna_origem = float(
+        tabela_icms.loc[origem, origem]
     )
 
-    aliq_destino = float(
-        tabela_icms.loc[destino, "ALIQUOTA"]
+    # INTERESTADUAL
+    aliq_inter = float(
+        tabela_icms.loc[origem, destino]
     )
 
-    return aliq_origem, aliq_destino
+    return aliq_interna_origem, aliq_inter
 
 
 # =========================
@@ -190,9 +189,7 @@ if xmls:
 
             root = ET.fromstring(conteudo)
 
-            # =========================
             # IGNORA EVENTOS
-            # =========================
             if root.find('.//nfe:infEvento', ns) is not None:
                 continue
 
@@ -239,9 +236,6 @@ if xmls:
                     ns
                 )
 
-                # =========================
-                # PRODUTO
-                # =========================
                 produto = txt(
                     prod,
                     'nfe:xProd'
@@ -281,29 +275,38 @@ if xmls:
                 # =========================
                 difal_calculado = 0
 
+                aliq_interna_origem = 0
+                aliq_inter = 0
+
                 try:
 
-                    aliq_origem, aliq_destino = buscar_aliquotas(
+                    aliq_interna_origem, aliq_inter = buscar_aliquotas(
                         uf_origem,
                         uf_destino
                     )
 
-                    aliq_origem = aliq_origem / 100
-                    aliq_destino = aliq_destino / 100
+                    aliq_interna_origem = (
+                        aliq_interna_origem / 100
+                    )
+
+                    aliq_inter = (
+                        aliq_inter / 100
+                    )
 
                     # BASE DUPLA
-                    if aliq_destino > aliq_origem:
+                    if aliq_interna_origem > aliq_inter:
 
                         difal_calculado = round(
                             (
                                 valor_produto *
                                 (
-                                    aliq_destino - aliq_origem
+                                    aliq_interna_origem -
+                                    aliq_inter
                                 )
                             )
                             /
                             (
-                                1 - aliq_destino
+                                1 - aliq_interna_origem
                             ),
                             2
                         )
@@ -350,9 +353,15 @@ if xmls:
                         2
                     ),
 
-                    "Aliquota Origem": aliq_origem * 100,
+                    "Aliquota Interna Origem": round(
+                        aliq_interna_origem * 100,
+                        2
+                    ),
 
-                    "Aliquota Destino": aliq_destino * 100,
+                    "Aliquota Interestadual": round(
+                        aliq_inter * 100,
+                        2
+                    ),
 
                     "DIFAL XML": round(
                         difal_xml,
