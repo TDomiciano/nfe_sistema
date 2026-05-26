@@ -1,7 +1,6 @@
 import streamlit as st
-import xml.etree.ElementTree as ET
 import pandas as pd
-import gc
+from lxml import etree as ET
 import zipfile
 import io
 
@@ -25,7 +24,23 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================
-# LEITURA DAS REGRAS
+# TITULO
+# =========================
+st.title("📄 Leitor Fiscal NF-e")
+
+st.info(
+    "⚠️ O sistema suporta XML e ZIP contendo XMLs."
+)
+
+# =========================
+# NAMESPACE XML
+# =========================
+ns = {
+    "nfe": "http://www.portalfiscal.inf.br/nfe"
+}
+
+# =========================
+# CARREGA REGRAS
 # =========================
 @st.cache_data
 def carregar_regras():
@@ -40,282 +55,244 @@ def carregar_regras():
         sheet_name="Config ST"
     )
 
-    return regras, regras_st
+    regras_dict = {}
+    regras_st_dict = {}
+
+    # =========================
+    # REGRAS FISCAIS
+    # =========================
+    for _, row in regras.iterrows():
+
+        chave = (
+            str(row["ncm"]).replace(".0", "").strip(),
+            str(row["origem"]).upper().strip(),
+            str(row["destino"]).upper().strip()
+        )
+
+        regras_dict[chave] = row.to_dict()
+
+    # =========================
+    # REGRAS ST
+    # =========================
+    for _, row in regras_st.iterrows():
+
+        chave = (
+            str(row["ncm"]).replace(".0", "").strip(),
+            str(row["origem"]).upper().strip(),
+            str(row["destino"]).upper().strip()
+        )
+
+        regras_st_dict[chave] = row.to_dict()
+
+    return regras_dict, regras_st_dict
 
 
-regras, regras_st = carregar_regras()
+regras_dict, regras_st_dict = carregar_regras()
 
 # =========================
 # FUNÇÃO SEGURA XML
 # =========================
-def get_text(element, tag, ns):
+def txt(elemento, tag):
 
-    if element is None:
+    if elemento is None:
         return ""
 
-    found = element.find(tag, ns)
+    achou = elemento.find(tag, ns)
 
-    return found.text if found is not None else ""
-
-
-# =========================
-# BUSCA REGRA FISCAL
-# =========================
-def buscar_regra(ncm, origem, destino):
-
-    ncm = str(ncm).replace(".0", "").strip()
-
-    filtro = regras[
-        (regras["ncm"]
-            .astype(str)
-            .str.replace(".0", "", regex=False)
-            .str.strip() == ncm)
-
-        &
-
-        (regras["origem"]
-            .astype(str)
-            .str.upper()
-            .str.strip() == str(origem).upper().strip())
-
-        &
-
-        (regras["destino"]
-            .astype(str)
-            .str.upper()
-            .str.strip() == str(destino).upper().strip())
-    ]
-
-    if not filtro.empty:
-        return filtro.iloc[0]
-
-    return None
+    return achou.text if achou is not None else ""
 
 
 # =========================
-# BUSCA REGRA ST
+# BUSCA REGRA
 # =========================
-def buscar_regra_st(ncm, origem, destino):
+def buscar_regra(dicionario, ncm, origem, destino):
 
-    ncm = str(ncm).replace(".0", "").strip()
+    chave = (
+        str(ncm).replace(".0", "").strip(),
+        str(origem).upper().strip(),
+        str(destino).upper().strip()
+    )
 
-    filtro = regras_st[
-        (regras_st["ncm"]
-            .astype(str)
-            .str.replace(".0", "", regex=False)
-            .str.strip() == ncm)
-
-        &
-
-        (regras_st["origem"]
-            .astype(str)
-            .str.upper()
-            .str.strip() == str(origem).upper().strip())
-
-        &
-
-        (regras_st["destino"]
-            .astype(str)
-            .str.upper()
-            .str.strip() == str(destino).upper().strip())
-    ]
-
-    if not filtro.empty:
-        return filtro.iloc[0]
-
-    return None
+    return dicionario.get(chave)
 
 
 # =========================
-# INTERFACE
+# UPLOAD
 # =========================
-st.title("📄 Leitor Fiscal NF-e")
-
-st.info(
-    "📦 Envie XMLs individuais ou ZIP contendo XMLs."
-)
-
-# =========================
-# UPLOAD XML E ZIP
-# =========================
-uploads = st.file_uploader(
-    "Envie XMLs ou ZIP com XMLs",
+arquivos = st.file_uploader(
+    "Envie XML ou ZIP",
     type=["xml", "zip"],
     accept_multiple_files=True
 )
 
-arquivos = []
+# =========================
+# LISTA XMLS
+# =========================
+xmls = []
 
-if uploads:
+if arquivos:
 
-    for upload in uploads:
+    for arq in arquivos:
 
         # =========================
         # XML NORMAL
         # =========================
-        if upload.name.lower().endswith(".xml"):
+        if arq.name.lower().endswith(".xml"):
 
-            arquivos.append(upload)
+            xmls.append(arq)
 
         # =========================
-        # ARQUIVO ZIP
+        # ZIP
         # =========================
-        elif upload.name.lower().endswith(".zip"):
+        elif arq.name.lower().endswith(".zip"):
 
             try:
 
-                with zipfile.ZipFile(upload, 'r') as zip_ref:
+                zip_file = zipfile.ZipFile(arq)
 
-                    for nome_arquivo in zip_ref.namelist():
+                for nome in zip_file.namelist():
 
-                        if nome_arquivo.lower().endswith(".xml"):
+                    if nome.lower().endswith(".xml"):
 
-                            xml_file = io.BytesIO(
-                                zip_ref.read(nome_arquivo)
-                            )
+                        xml_bytes = zip_file.read(nome)
 
-                            xml_file.name = nome_arquivo
-
-                            arquivos.append(xml_file)
+                        xmls.append(
+                            io.BytesIO(xml_bytes)
+                        )
 
             except Exception as e:
 
                 st.error(
-                    f"Erro ao ler ZIP {upload.name}: {e}"
+                    f"Erro ao abrir ZIP {arq.name}: {e}"
                 )
-
-dados = []
-
-# =========================
-# CHAVES CANCELADAS
-# =========================
-chaves_canceladas = set()
 
 # =========================
 # PROCESSAMENTO
 # =========================
-if arquivos:
+dados = []
 
-    total_arquivos = len(arquivos)
+canceladas = set()
 
-    st.write(f"📦 Total de arquivos encontrados: {total_arquivos}")
+if xmls:
 
-    # =========================
-    # ALERTA MUITOS XMLS
-    # =========================
-    if total_arquivos > 5000:
+    total = len(xmls)
 
-        st.warning(
-            "⚠️ Muitos XMLs detectados. "
-            "O processamento pode demorar."
-        )
+    st.success(
+        f"📦 {total} XMLs encontrados"
+    )
 
     barra = st.progress(0)
 
     # =========================
     # PRIMEIRO LOOP
-    # IDENTIFICA CANCELAMENTOS
+    # IDENTIFICA CANCELADAS
     # =========================
-    for i, arq in enumerate(arquivos):
+    for i, arq in enumerate(xmls):
 
         try:
 
             arq.seek(0)
 
-            tree = ET.parse(arq)
-            root = tree.getroot()
+            conteudo = arq.read()
 
-            ns = {
-                'nfe': 'http://www.portalfiscal.inf.br/nfe'
-            }
-
-            xml_str = ET.tostring(
-                root,
-                encoding='unicode'
+            texto = conteudo.decode(
+                "utf-8",
+                errors="ignore"
             ).upper()
 
-            # =========================
-            # EVENTO CANCELAMENTO
-            # =========================
             if (
-                "CANCELAMENTO" in xml_str
+                "CANCELAMENTO" in texto
                 and
-                "110111" in xml_str
+                "110111" in texto
             ):
 
-                chave_evento = ""
+                root = ET.fromstring(conteudo)
 
-                ret_evento = root.find(
-                    './/nfe:retEvento/nfe:infEvento',
+                inf_evento = root.find(
+                    ".//nfe:infEvento",
                     ns
                 )
 
-                if ret_evento is not None:
+                chave = txt(
+                    inf_evento,
+                    "nfe:chNFe"
+                )
 
-                    chave_evento = get_text(
-                        ret_evento,
-                        'nfe:chNFe',
-                        ns
-                    )
+                if chave != "":
 
-                if chave_evento == "":
+                    canceladas.add(chave)
 
-                    inf_evento = root.find(
-                        './/nfe:infEvento',
-                        ns
-                    )
-
-                    chave_evento = get_text(
-                        inf_evento,
-                        'nfe:chNFe',
-                        ns
-                    )
-
-                if chave_evento != "":
-
-                    chaves_canceladas.add(
-                        chave_evento
-                    )
-
-            # =========================
-            # LIMPA MEMÓRIA
-            # =========================
-            del tree
-            del root
-
-            gc.collect()
-
-            barra.progress((i + 1) / total_arquivos)
+            barra.progress((i + 1) / total)
 
         except:
             pass
 
     # =========================
     # SEGUNDO LOOP
-    # PROCESSA NFS
+    # PROCESSA XML
     # =========================
-    for i, arq in enumerate(arquivos):
+    for i, arq in enumerate(xmls):
 
         try:
 
             arq.seek(0)
 
-            tree = ET.parse(arq)
-            root = tree.getroot()
+            conteudo = arq.read()
 
-            ns = {
-                'nfe': 'http://www.portalfiscal.inf.br/nfe'
-            }
+            texto = conteudo.decode(
+                "utf-8",
+                errors="ignore"
+            ).upper()
+
+            root = ET.fromstring(conteudo)
 
             # IGNORA EVENTOS
             if root.find('.//nfe:infEvento', ns) is not None:
                 continue
 
             ide = root.find('.//nfe:ide', ns)
-
             emit = root.find('.//nfe:emit', ns)
-
             dest = root.find('.//nfe:dest', ns)
+
+            # =========================
+            # ENDERECOS
+            # =========================
+            emit_end = (
+                emit.find('nfe:enderEmit', ns)
+                if emit is not None
+                else None
+            )
+
+            dest_end = (
+                dest.find('nfe:enderDest', ns)
+                if dest is not None
+                else None
+            )
+
+            # =========================
+            # UFS
+            # =========================
+            uf_origem = txt(
+                emit_end,
+                'nfe:UF'
+            )
+
+            uf_destino = txt(
+                dest_end,
+                'nfe:UF'
+            )
+
+            # =========================
+            # CLIENTE
+            # =========================
+            cnpj = txt(dest, 'nfe:CNPJ')
+            cpf = txt(dest, 'nfe:CPF')
+
+            tipo_cliente = (
+                "PJ"
+                if cnpj != ""
+                else "PF"
+            )
 
             # =========================
             # CHAVE ACESSO
@@ -325,11 +302,11 @@ if arquivos:
                 ns
             )
 
-            chave_acesso = ""
+            chave = ""
 
             if inf_nfe is not None:
 
-                chave_acesso = (
+                chave = (
                     inf_nfe.attrib.get("Id", "")
                     .replace("NFe", "")
                 )
@@ -339,120 +316,174 @@ if arquivos:
             # =========================
             status = "AUTORIZADA"
 
-            if chave_acesso in chaves_canceladas:
+            if chave in canceladas:
 
                 status = "CANCELADA"
 
-            xml_str = ET.tostring(
-                root,
-                encoding='unicode'
-            ).upper()
-
-            if "DENEGADO" in xml_str:
+            if "DENEGADO" in texto:
 
                 status = "DENEGADA"
 
-            elif "REJEICAO" in xml_str:
+            elif "REJEICAO" in texto:
 
                 status = "REJEITADA"
 
-            ender_emit = (
-                emit.find('nfe:enderEmit', ns)
-                if emit is not None
-                else None
-            )
-
-            ender_dest = (
-                dest.find('nfe:enderDest', ns)
-                if dest is not None
-                else None
-            )
-
             # =========================
-            # CLIENTE PF/PJ
+            # ITENS
             # =========================
-            cnpj = get_text(dest, 'nfe:CNPJ', ns)
-
-            cpf = get_text(dest, 'nfe:CPF', ns)
-
-            tipo_cliente = (
-                "PJ"
-                if cnpj != ""
-                else "PF"
-            )
-
-            # =========================
-            # UF ORIGEM / DESTINO
-            # =========================
-            uf_origem = get_text(
-                ender_emit,
-                'nfe:UF',
+            itens = root.findall(
+                './/nfe:det',
                 ns
             )
-
-            uf_destino = get_text(
-                ender_dest,
-                'nfe:UF',
-                ns
-            )
-
-            # =========================
-            # LOOP ITENS
-            # =========================
-            itens = root.findall('.//nfe:det', ns)
 
             for item in itens:
 
-                prod = item.find('nfe:prod', ns)
+                prod = item.find(
+                    'nfe:prod',
+                    ns
+                )
 
-                imposto = item.find('nfe:imposto', ns)
+                imposto = item.find(
+                    'nfe:imposto',
+                    ns
+                )
 
                 icms = (
-                    imposto.find('.//nfe:ICMS/*', ns)
+                    imposto.find(
+                        './/nfe:ICMS/*',
+                        ns
+                    )
                     if imposto is not None
                     else None
                 )
 
-                ncm_xml = get_text(
+                # =========================
+                # DADOS XML
+                # =========================
+                ncm = txt(
                     prod,
-                    'nfe:NCM',
-                    ns
+                    'nfe:NCM'
                 )
 
-                cfop_xml = get_text(
+                cfop = txt(
                     prod,
-                    'nfe:CFOP',
-                    ns
+                    'nfe:CFOP'
                 )
 
-                cst_xml = ""
+                produto = txt(
+                    prod,
+                    'nfe:xProd'
+                )
 
-                if icms is not None:
+                codigo = txt(
+                    prod,
+                    'nfe:cProd'
+                )
 
-                    cst_xml = (
-                        get_text(icms, 'nfe:CST', ns)
-                        or
-                        get_text(icms, 'nfe:CSOSN', ns)
-                    )
+                quantidade = txt(
+                    prod,
+                    'nfe:qCom'
+                )
 
-                aliquota_xml = get_text(
+                cst = (
+                    txt(icms, 'nfe:CST')
+                    or
+                    txt(icms, 'nfe:CSOSN')
+                )
+
+                aliquota = txt(
                     icms,
-                    'nfe:pICMS',
-                    ns
+                    'nfe:pICMS'
+                )
+
+                valor_icms = txt(
+                    icms,
+                    'nfe:vICMS'
                 )
 
                 # =========================
-                # BUSCA REGRA
+                # PIS
+                # =========================
+                pis_tag = (
+                    imposto.find(
+                        './/nfe:PIS/*',
+                        ns
+                    )
+                    if imposto is not None
+                    else None
+                )
+
+                valor_pis = txt(
+                    pis_tag,
+                    'nfe:vPIS'
+                )
+
+                # =========================
+                # COFINS
+                # =========================
+                cofins_tag = (
+                    imposto.find(
+                        './/nfe:COFINS/*',
+                        ns
+                    )
+                    if imposto is not None
+                    else None
+                )
+
+                valor_cofins = txt(
+                    cofins_tag,
+                    'nfe:vCOFINS'
+                )
+                # =========================
+                # DIFAL / FCP
+                # =========================
+                icmsufdest = (
+                    imposto.find(
+                        './/nfe:ICMSUFDest',
+                        ns
+                    )
+                    if imposto is not None
+                    else None
+                )
+
+                valor_difal = txt(
+                    icmsufdest,
+                    'nfe:vICMSUFDest'
+                )
+
+                valor_fcp = txt(
+                    icmsufdest,
+                    'nfe:vFCPUFDest'
+                )
+                # =========================
+                # REGRAS
                 # =========================
                 regra = buscar_regra(
-                    ncm_xml,
+                    regras_dict,
+                    ncm,
+                    uf_origem,
+                    uf_destino
+                )
+
+                regra_st = buscar_regra(
+                    regras_st_dict,
+                    ncm,
                     uf_origem,
                     uf_destino
                 )
 
                 divergencias = []
 
-                if regra is not None:
+                # =========================
+                # VALIDACOES
+                # =========================
+                if regra is None:
+
+                    divergencias.append(
+                        "SEM REGRA FISCAL"
+                    )
+
+                else:
 
                     cfop_regra = (
                         str(regra["cfop_pj"])
@@ -464,61 +495,160 @@ if arquivos:
                         regra["aliquota_icms"]
                     ).replace(".0", "")
 
-                    if cfop_xml != cfop_regra:
+                    cst_regra = (
+                        str(regra["cst_icms_pj"])
+                        if tipo_cliente == "PJ"
+                        else str(regra["cst_icms_pf"])
+                    ).replace(".0", "")
+
+                    # CFOP
+                    if cfop != cfop_regra:
 
                         divergencias.append(
-                            f"CFOP XML ({cfop_xml}) diferente da regra"
+                            f"CFOP XML ({cfop}) diferente da regra ({cfop_regra})"
                         )
 
-                    try:
+                    # CST
+                    if cst != "" and cst_regra != "":
 
-                        if (
-                            aliquota_xml != ""
-                            and
-                            float(aliquota_xml) != float(aliquota_regra)
-                        ):
+                        try:
+
+                            if int(cst) != int(cst_regra):
+
+                                divergencias.append(
+                                    f"CST XML ({cst}) diferente da regra ({cst_regra})"
+                                )
+
+                        except:
 
                             divergencias.append(
-                                f"ICMS XML ({aliquota_xml}) diferente da regra ({aliquota_regra})"
+                                "Erro ao validar CST"
                             )
 
-                    except:
-                        pass
+                    # ICMS
+                    if aliquota != "" and aliquota_regra != "":
 
-                else:
+                        try:
+
+                            if float(aliquota) != float(aliquota_regra):
+
+                                divergencias.append(
+                                    f"ICMS XML ({aliquota}) diferente da regra ({aliquota_regra})"
+                                )
+
+                        except:
+
+                            divergencias.append(
+                                "Erro ao validar aliquota"
+                            )
+
+                # =========================
+                # ST
+                # =========================
+                csts_st = [
+                    "10",
+                    "30",
+                    "60",
+                    "70"
+                ]
+
+                tem_st = cst in csts_st
+
+                if regra_st is not None and not tem_st:
 
                     divergencias.append(
-                        "SEM REGRA FISCAL"
+                        "Produto deveria ter ST"
                     )
+
+                if regra_st is None and tem_st:
+
+                    divergencias.append(
+                        "Produto possui ST sem regra"
+                    )
+
+                # =========================
+                # VALOR PRODUTO
+                # =========================
+                valor_bruto = float(
+                    txt(prod, 'nfe:vProd') or 0
+                )
+
+                valor_desc = float(
+                    txt(prod, 'nfe:vDesc') or 0
+                )
+
+                valor_final = (
+                    valor_bruto - valor_desc
+                )
 
                 # =========================
                 # DADOS
                 # =========================
                 dados.append({
 
-                    "Numero NF": get_text(
+                    "Numero NF": txt(
                         ide,
-                        'nfe:nNF',
-                        ns
+                        'nfe:nNF'
                     ),
 
-                    "Chave Acesso": f"'{chave_acesso}",
-
-                    "Produto": get_text(
-                        prod,
-                        'nfe:xProd',
-                        ns
+                    "Serie": txt(
+                        ide,
+                        'nfe:serie'
                     ),
 
-                    "NCM": ncm_xml,
+                    "Emissao": txt(
+                        ide,
+                        'nfe:dhEmi'
+                    ),
 
-                    "CFOP XML": cfop_xml,
-
-                    "CST XML": cst_xml,
-
-                    "Aliquota ICMS XML": aliquota_xml,
+                    "Chave Acesso": f"'{chave}",
 
                     "Status": status,
+
+                    "Destinatario": txt(
+                        dest,
+                        'nfe:xNome'
+                    ),
+
+                    "CPF/CNPJ": (
+                        cnpj if cnpj != ""
+                        else cpf
+                    ),
+
+                    "Tipo Cliente": tipo_cliente,
+
+                    "UF Origem": uf_origem,
+
+                    "UF Destino": uf_destino,
+
+                    "Produto": produto,
+
+                    "Codigo": codigo,
+
+                    "Quantidade": quantidade,
+
+                    "NCM": ncm,
+
+                    "CFOP XML": cfop,
+
+                    "CST XML": cst,
+
+                    "Aliquota ICMS XML": aliquota,
+
+                    "Valor ICMS": valor_icms,
+
+                    "PIS": valor_pis,
+
+                    "COFINS": valor_cofins,
+
+                    "Valor DIFAL": valor_difal,
+
+                    "Valor FCP": valor_fcp,
+                    "Tem Regra ST": (
+                        "SIM"
+                        if regra_st is not None
+                        else "NAO"
+                    ),
 
                     "Validacao": (
                         "OK"
@@ -528,35 +658,29 @@ if arquivos:
 
                     "Divergencias": (
                         " | ".join(divergencias)
+                    ),
+
+                    "Valor Produto Total": round(
+                        valor_final,
+                        2
                     )
 
                 })
 
-            # =========================
-            # LIMPA MEMÓRIA
-            # =========================
-            del tree
-            del root
-            del itens
-
-            gc.collect()
-
-            barra.progress((i + 1) / total_arquivos)
+            barra.progress((i + 1) / total)
 
         except Exception as e:
 
             st.error(
-                f"Erro no arquivo {arq.name}: {e}"
+                f"Erro no arquivo: {e}"
             )
 
 # =========================
-# DATAFRAME
+# RESULTADO
 # =========================
-df = pd.DataFrame(dados)
+if dados:
 
-if not df.empty:
-
-    st.subheader("📊 Resultado Fiscal")
+    df = pd.DataFrame(dados)
 
     st.success(
         f"✅ {len(df)} registros processados"
@@ -564,8 +688,8 @@ if not df.empty:
 
     csv = df.to_csv(
         index=False,
-        sep=';'
-    ).encode('utf-8-sig')
+        sep=";"
+    ).encode("utf-8-sig")
 
     st.download_button(
         "⬇️ Baixar CSV",
@@ -574,9 +698,6 @@ if not df.empty:
         "text/csv"
     )
 
-    # =========================
-    # LIMITA EXIBIÇÃO
-    # =========================
     st.dataframe(
         df.head(500)
     )
@@ -584,12 +705,11 @@ if not df.empty:
     if len(df) > 500:
 
         st.warning(
-            "⚠️ Mostrando apenas os primeiros 500 registros "
-            "para evitar travamentos."
+            "⚠️ Mostrando apenas os primeiros 500 registros."
         )
 
 else:
 
     st.info(
-        "Envie XMLs ou ZIP para iniciar."
+        "Envie XMLs ou ZIPs para iniciar."
     )
