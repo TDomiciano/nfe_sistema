@@ -513,45 +513,43 @@ if xmls:
                     uf_origem,
                     uf_destino
                 )
-
                 # =========================
                 # DIVERGENCIAS
                 # =========================
                 divergencias = []
 
+                # =========================
+                # DIFAL BASE DUPLA
+                # =========================
+                difal_calculado = 0
 
-              # =========================
-# DIFAL BASE DUPLA
-# =========================
-difal_calculado = 0
+                try:
 
-try:
+                    if aliq_interna > 0:
 
-    if aliq_interna > 0:
+                        base_dupla = (
+                            base_operacao /
+                            (1 - (aliq_interna / 100))
+                        )
 
-        base_dupla = (
-            base_operacao /
-            (1 - (aliq_interna / 100))
-        )
+                        valor_interno = (
+                            base_dupla *
+                            (aliq_interna / 100)
+                        )
 
-        valor_interno = (
-            base_dupla *
-            (aliq_interna / 100)
-        )
+                        valor_interestadual = (
+                            base_operacao *
+                            (aliq_inter / 100)
+                        )
 
-        valor_interestadual = (
-            base_operacao *
-            (aliq_inter / 100)
-        )
+                        difal_calculado = round(
+                            valor_interno -
+                            valor_interestadual,
+                            2
+                        )
 
-        difal_calculado = round(
-            valor_interno -
-            valor_interestadual,
-            2
-        )
-
-except:
-    pass
+                except:
+                    pass
 
                 # =========================
                 # DIFAL XML
