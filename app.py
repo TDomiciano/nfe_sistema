@@ -518,38 +518,20 @@ if xmls:
                 # =========================
                 divergencias = []
 
-                # =========================
-                # DIFAL BASE DUPLA
-                # =========================
-                difal_calculado = 0
+                if aliq_interna > aliq_inter:
 
-                try:
+        diferenca_aliquota = (
+            aliq_interna - aliq_inter
+        )
 
-                    if aliq_interna > 0:
+        difal_calculado = round(
+            base_operacao *
+            (diferenca_aliquota / 100),
+            2
+        )
 
-                        base_dupla = (
-                            base_operacao /
-                            (1 - (aliq_interna / 100))
-                        )
-
-                        valor_interno = (
-                            base_dupla *
-                            (aliq_interna / 100)
-                        )
-
-                        valor_interestadual = (
-                            base_operacao *
-                            (aliq_inter / 100)
-                        )
-
-                        difal_calculado = round(
-                            valor_interno -
-                            valor_interestadual,
-                            2
-                        )
-
-                except:
-                    pass
+except:
+    pass
 
                 # =========================
                 # DIFAL XML
