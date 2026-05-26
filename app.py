@@ -520,7 +520,7 @@ if xmls:
                 divergencias = []
 
 
-               # =========================
+              # =========================
 # DIFAL BASE DUPLA
 # =========================
 difal_calculado = 0
