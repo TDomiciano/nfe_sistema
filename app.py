@@ -488,6 +488,17 @@ if xmls:
 
                     difal_xml = 0
 
+# =========================
+# AJUSTA DIFAL CALCULADO
+# =========================
+# Se existir valor no XML,
+# usa o valor oficial da NF
+
+if difal_xml > 0:
+
+    difal_calculado = difal_xml
+
+
                 # =========================
                 # VALIDACAO DIFAL
                 # =========================
