@@ -500,42 +500,45 @@ if xmls:
                 # =========================
                 # REGRAS
                 # =========================
-                regra = buscar_regra(
-                    regras_dict,
-                    ncm,
-                    uf_origem,
-                    uf_destino
-                )
-
                 regra_st = buscar_regra(
                     regras_st_dict,
                     ncm,
                     uf_origem,
                     uf_destino
                 )
-                                # =========================
+
+                # =========================
                 # DIVERGENCIAS
                 # =========================
                 divergencias = []
 
                 # =========================
-                # DIFAL NORMAL
+                # DIFAL
                 # =========================
                 difal_calculado = 0
 
                 try:
 
-                    # BASE DO DIFAL
+                    # BASE DIFAL
                     base_difal = float(
                         txt(icmsufdest, 'nfe:vBCUFDest') or 0
                     )
 
-                    # DIFERENCA ALIQUOTA
+                    # ALIQUOTAS
+                    aliq_inter = float(
+                        txt(icmsufdest, 'nfe:pICMSInter') or 0
+                    )
+
+                    aliq_interna = float(
+                        txt(icmsufdest, 'nfe:pICMSUFDest') or 0
+                    )
+
+                    # DIFERENCA
                     diferenca_aliquota = (
                         aliq_interna - aliq_inter
                     )
 
-                    # PERCENTUAL PARTILHA
+                    # PARTILHA
                     perc_partilha = float(
                         txt(icmsufdest, 'nfe:pICMSInterPart') or 100
                     )
