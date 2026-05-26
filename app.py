@@ -58,10 +58,42 @@ def carregar_regras():
     # =========================
     # TABELA ICMS
     # =========================
+    try:
+
     tabela_icms = pd.read_excel(
-        "aliquotas.xlsx",
-        index_col=0
+    "aliquotas.xlsx",
+    index_col=0
+)
+
+# limpa colunas
+tabela_icms.columns = (
+    tabela_icms.columns
+    .astype(str)
+    .str.upper()
+    .str.strip()
+)
+
+# limpa index
+tabela_icms.index = (
+    tabela_icms.index
+    .astype(str)
+    .str.upper()
+    .str.strip()
+)
+
+# converte tudo para numero
+tabela_icms = tabela_icms.apply(
+    pd.to_numeric,
+    errors="coerce"
+)
+
+except Exception as e:
+
+    st.error(
+        f"Erro ao carregar aliquotas.xlsx: {e}"
     )
+
+    st.stop()
 
     regras_dict = {}
     regras_st_dict = {}
@@ -133,25 +165,23 @@ def buscar_aliquotas(origem, destino):
         origem = str(origem).upper().strip()
         destino = str(destino).upper().strip()
 
-        # interestadual
         aliq_inter = float(
-            str(
-                tabela_icms.loc[origem, destino]
-            ).replace(",", ".")
+            tabela_icms.loc[origem, destino]
         )
 
-        # interna
         aliq_interna = float(
-            str(
-                tabela_icms.loc[destino, destino]
-            ).replace(",", ".")
+            tabela_icms.loc[destino, destino]
         )
 
         return aliq_inter, aliq_interna
 
-    except:
-        return 0, 0
+    except Exception as e:
 
+        st.error(
+            f"Erro aliquota {origem}->{destino}: {e}"
+        )
+
+        return 0, 0
 
 # =========================
 # UPLOAD
