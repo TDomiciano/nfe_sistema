@@ -505,7 +505,7 @@ if xmls:
                     divergencias.append(
                         f"DIFAL XML ({difal_xml}) diferente do calculado ({difal_calculado})"
                     )
-                # =========================
+                                # =========================
                 # REGRAS
                 # =========================
                 regra = buscar_regra(
@@ -522,8 +522,12 @@ if xmls:
                     uf_destino
                 )
 
+                # =========================
+                # DIVERGENCIAS
+                # =========================
                 divergencias = []
-# =========================
+
+                # =========================
                 # DIFAL BASE DUPLA
                 # FORMULA:
                 # Base dupla = Base / (1 - aliquota interna)
@@ -560,7 +564,9 @@ if xmls:
                 except:
                     pass
 
+                # =========================
                 # DIFAL XML
+                # =========================
                 try:
 
                     difal_xml = float(
@@ -570,7 +576,15 @@ if xmls:
                 except:
 
                     difal_xml = 0
-)
+
+                # =========================
+                # VALIDACAO DIFAL
+                # =========================
+                if round(difal_xml, 2) != round(difal_calculado, 2):
+
+                    divergencias.append(
+                        f"DIFAL XML ({difal_xml}) diferente do calculado ({difal_calculado})"
+                    )
 
                 # =========================
                 # VALIDACOES
