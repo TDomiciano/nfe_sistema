@@ -40,106 +40,52 @@ ns = {
 }
 
 # =========================
-# CARREGA REGRAS
+# CARREGA TABELAS
 # =========================
 @st.cache_data
-def carregar_regras():
+def carregar_tabelas():
 
-    regras = pd.read_excel(
-        "conf_fiscais.xlsx",
-        sheet_name="Config Fiscal"
+    # =========================
+    # PLANILHA ALIQUOTAS
+    # =========================
+    tabela_icms = pd.read_excel(
+        "aliquotas.xlsx"
     )
 
-    regras_st = pd.read_excel(
-        "conf_fiscais.xlsx",
-        sheet_name="Config ST"
+    # PRIMEIRA COLUNA = INDEX
+    tabela_icms = tabela_icms.set_index(
+        tabela_icms.columns[0]
     )
 
-    # =========================
-    # TABELA ICMS
-    # =========================
-    try:
+    # LIMPA INDEX
+    tabela_icms.index = (
+        tabela_icms.index
+        .astype(str)
+        .str.upper()
+        .str.strip()
+    )
 
-        tabela_icms = pd.read_excel(
-            "aliquotas.xlsx"
-        )
+    # LIMPA COLUNAS
+    tabela_icms.columns = (
+        tabela_icms.columns
+        .astype(str)
+        .str.upper()
+        .str.strip()
+    )
 
-        # primeira coluna vira indice
-        tabela_icms = tabela_icms.set_index(
-            tabela_icms.columns[0]
-        )
+    # CONVERTE NUMEROS
+    tabela_icms = tabela_icms.apply(
+        pd.to_numeric,
+        errors="coerce"
+    )
 
-        # limpa colunas
-        tabela_icms.columns = (
-            tabela_icms.columns
-            .astype(str)
-            .str.upper()
-            .str.strip()
-        )
-
-        # limpa index
-        tabela_icms.index = (
-            tabela_icms.index
-            .astype(str)
-            .str.upper()
-            .str.strip()
-        )
-
-        # converte tudo para numero
-        tabela_icms = tabela_icms.apply(
-            pd.to_numeric,
-            errors="coerce"
-        )
-
-    except Exception as e:
-
-        st.error(
-            f"Erro ao carregar aliquotas.xlsx: {e}"
-        )
-
-        st.stop()
-
-    regras_dict = {}
-    regras_st_dict = {}
-
-    # =========================
-    # REGRAS FISCAIS
-    # =========================
-    for _, row in regras.iterrows():
-
-        chave = (
-            str(row["ncm"]).replace(".0", "").strip(),
-            str(row["origem"]).upper().strip(),
-            str(row["destino"]).upper().strip()
-        )
-
-        regras_dict[chave] = row.to_dict()
-
-    # =========================
-    # REGRAS ST
-    # =========================
-    for _, row in regras_st.iterrows():
-
-        chave = (
-            str(row["ncm"]).replace(".0", "").strip(),
-            str(row["origem"]).upper().strip(),
-            str(row["destino"]).upper().strip()
-        )
-
-        regras_st_dict[chave] = row.to_dict()
-
-    return regras_dict, regras_st_dict, tabela_icms
+    return tabela_icms
 
 
-regras_dict, regras_st_dict, tabela_icms = carregar_regras()
+tabela_icms = carregar_tabelas()
 
 # =========================
-# DEBUG TABELA
-# =========================
-st.write(tabela_icms)
-
-# =========================
-# FUNÇÃO SEGURA XML
+# FUNÇÃO XML
 # =========================
 def txt(elemento, tag):
 
@@ -152,45 +98,22 @@ def txt(elemento, tag):
 
 
 # =========================
-# BUSCA REGRA
-# =========================
-def buscar_regra(dicionario, ncm, origem, destino):
-
-    chave = (
-        str(ncm).replace(".0", "").strip(),
-        str(origem).upper().strip(),
-        str(destino).upper().strip()
-    )
-
-    return dicionario.get(chave)
-
-# =========================
 # BUSCA ALIQUOTAS
 # =========================
 def buscar_aliquotas(origem, destino):
 
-    try:
+    origem = str(origem).upper().strip()
+    destino = str(destino).upper().strip()
 
-        origem = str(origem).upper().strip()
-        destino = str(destino).upper().strip()
+    aliq_origem = float(
+        tabela_icms.loc[origem, "ALIQUOTA"]
+    )
 
-        aliq_inter = float(
-            tabela_icms.loc[origem, destino]
-        )
+    aliq_destino = float(
+        tabela_icms.loc[destino, "ALIQUOTA"]
+    )
 
-        aliq_interna = float(
-            tabela_icms.loc[destino, destino]
-        )
-
-        return aliq_inter, aliq_interna
-
-    except Exception as e:
-
-        st.error(
-            f"Erro aliquota {origem}->{destino}: {e}"
-        )
-
-        return 0, 0
+    return aliq_origem, aliq_destino
 
 
 # =========================
@@ -244,8 +167,6 @@ if arquivos:
 # =========================
 dados = []
 
-canceladas = set()
-
 if xmls:
 
     total = len(xmls)
@@ -268,6 +189,12 @@ if xmls:
             conteudo = arq.read()
 
             root = ET.fromstring(conteudo)
+
+            # =========================
+            # IGNORA EVENTOS
+            # =========================
+            if root.find('.//nfe:infEvento', ns) is not None:
+                continue
 
             ide = root.find('.//nfe:ide', ns)
             emit = root.find('.//nfe:emit', ns)
@@ -313,6 +240,18 @@ if xmls:
                 )
 
                 # =========================
+                # PRODUTO
+                # =========================
+                produto = txt(
+                    prod,
+                    'nfe:xProd'
+                )
+
+                valor_produto = float(
+                    txt(prod, 'nfe:vProd') or 0
+                )
+
+                # =========================
                 # DIFAL XML
                 # =========================
                 icmsufdest = (
@@ -327,7 +266,10 @@ if xmls:
                 try:
 
                     difal_xml = float(
-                        txt(icmsufdest, 'nfe:vICMSUFDest') or 0
+                        txt(
+                            icmsufdest,
+                            'nfe:vICMSUFDest'
+                        ) or 0
                     )
 
                 except:
@@ -335,36 +277,33 @@ if xmls:
                     difal_xml = 0
 
                 # =========================
-                # DIFAL CALCULADO
+                # CALCULO DIFAL
                 # =========================
                 difal_calculado = 0
 
                 try:
 
-                    aliq_inter, aliq_interna = buscar_aliquotas(
+                    aliq_origem, aliq_destino = buscar_aliquotas(
                         uf_origem,
                         uf_destino
                     )
 
-                    base = float(
-                        txt(prod, 'nfe:vProd') or 0
-                    )
+                    aliq_origem = aliq_origem / 100
+                    aliq_destino = aliq_destino / 100
 
-                    aliq_inter = aliq_inter / 100
-                    aliq_interna = aliq_interna / 100
-
-                    if aliq_interna > aliq_inter:
+                    # BASE DUPLA
+                    if aliq_destino > aliq_origem:
 
                         difal_calculado = round(
                             (
-                                base *
+                                valor_produto *
                                 (
-                                    aliq_interna - aliq_inter
+                                    aliq_destino - aliq_origem
                                 )
                             )
                             /
                             (
-                                1 - aliq_interna
+                                1 - aliq_destino
                             ),
                             2
                         )
@@ -372,11 +311,11 @@ if xmls:
                 except Exception as e:
 
                     st.error(
-                        f"Erro calculo DIFAL: {e}"
+                        f"Erro DIFAL {uf_origem}->{uf_destino}: {e}"
                     )
 
                 # =========================
-                # DIVERGENCIAS
+                # VALIDACAO
                 # =========================
                 divergencias = []
 
@@ -395,26 +334,35 @@ if xmls:
                 # =========================
                 dados.append({
 
+                    "Numero NF": txt(
+                        ide,
+                        'nfe:nNF'
+                    ),
+
                     "UF Origem": uf_origem,
 
                     "UF Destino": uf_destino,
 
-                    "Produto": txt(
-                        prod,
-                        'nfe:xProd'
+                    "Produto": produto,
+
+                    "Valor Produto": round(
+                        valor_produto,
+                        2
                     ),
 
-                    "Valor Produto": float(
-                        txt(prod, 'nfe:vProd') or 0
+                    "Aliquota Origem": aliq_origem * 100,
+
+                    "Aliquota Destino": aliq_destino * 100,
+
+                    "DIFAL XML": round(
+                        difal_xml,
+                        2
                     ),
 
-                    "Aliquota Interna": aliq_interna * 100,
-
-                    "Aliquota Interestadual": aliq_inter * 100,
-
-                    "DIFAL XML": difal_xml,
-
-                    "DIFAL Calculado": difal_calculado,
+                    "DIFAL Calculado": round(
+                        difal_calculado,
+                        2
+                    ),
 
                     "Validacao": (
                         "OK"
@@ -433,7 +381,7 @@ if xmls:
         except Exception as e:
 
             st.error(
-                f"Erro no arquivo: {e}"
+                f"Erro no XML: {e}"
             )
 
 # =========================
