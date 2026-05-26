@@ -61,31 +61,35 @@ def carregar_regras():
     try:
 
         tabela_icms = pd.read_excel(
-            "aliquotas.xlsx",
-            index_col=0
-        )
+    "aliquotas.xlsx"
+)
 
-        # limpa colunas
-        tabela_icms.columns = (
-            tabela_icms.columns
-            .astype(str)
-            .str.upper()
-            .str.strip()
-        )
+# primeira coluna vira índice
+tabela_icms = tabela_icms.set_index(
+    tabela_icms.columns[0]
+)
 
-        # limpa index
-        tabela_icms.index = (
-            tabela_icms.index
-            .astype(str)
-            .str.upper()
-            .str.strip()
-        )
+# limpa colunas
+tabela_icms.columns = (
+    tabela_icms.columns
+    .astype(str)
+    .str.upper()
+    .str.strip()
+)
 
-        # converte para numero
-        tabela_icms = tabela_icms.apply(
-            pd.to_numeric,
-            errors="coerce"
-        )
+# limpa index
+tabela_icms.index = (
+    tabela_icms.index
+    .astype(str)
+    .str.upper()
+    .str.strip()
+)
+
+# converte tudo para numero
+tabela_icms = tabela_icms.apply(
+    pd.to_numeric,
+    errors="coerce"
+)
 
     except Exception as e:
 
