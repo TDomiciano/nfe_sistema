@@ -498,14 +498,6 @@ if xmls:
 
                 
                 # =========================
-                # VALIDACAO DIFAL
-                # =========================
-                if round(difal_xml, 2) != round(difal_calculado, 2):
-
-                    divergencias.append(
-                        f"DIFAL XML ({difal_xml}) diferente do calculado ({difal_calculado})"
-                    )
-                                # =========================
                 # REGRAS
                 # =========================
                 regra = buscar_regra(
@@ -527,6 +519,7 @@ if xmls:
                 # =========================
                 divergencias = []
 
+
                 # =========================
                 # DIFAL BASE DUPLA
                 # FORMULA:
@@ -538,7 +531,7 @@ if xmls:
 
                 try:
 
-                    if aliq_interna > 0:
+                  	if aliq_interna > 0 and aliq_interna < 100:
 
                         base_dupla = (
                             base_operacao /
@@ -580,7 +573,7 @@ if xmls:
                 # =========================
                 # VALIDACAO DIFAL
                 # =========================
-                if round(difal_xml, 2) != round(difal_calculado, 2):
+                if abs(difal_xml - difal_calculado) > 0.05:
 
                     divergencias.append(
                         f"DIFAL XML ({difal_xml}) diferente do calculado ({difal_calculado})"
@@ -755,7 +748,6 @@ if xmls:
 
                     "Valor DIFAL": valor_difal,
 
-                    "Valor FCP": valor_fcp,
                     "Tem Regra ST": (
                         "SIM"
                         if regra_st is not None
