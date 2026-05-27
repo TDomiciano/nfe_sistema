@@ -1,4 +1,4 @@
-import streamlit as st
+imimport streamlit as st
 import pandas as pd
 from lxml import etree as ET
 import zipfile
@@ -134,16 +134,12 @@ if arquivos:
 
     for arq in arquivos:
 
-        # =========================
-        # XML NORMAL
-        # =========================
+        # XML
         if arq.name.lower().endswith(".xml"):
 
             xmls.append(arq)
 
-        # =========================
         # ZIP
-        # =========================
         elif arq.name.lower().endswith(".zip"):
 
             try:
@@ -184,7 +180,6 @@ if xmls:
     barra = st.progress(0)
 
     # =========================
-    # PRIMEIRO LOOP
     # IDENTIFICA CANCELADAS
     # =========================
     for i, arq in enumerate(xmls):
@@ -228,7 +223,6 @@ if xmls:
             pass
 
     # =========================
-    # SEGUNDO LOOP
     # PROCESSA XML
     # =========================
     for i, arq in enumerate(xmls):
@@ -315,29 +309,36 @@ if xmls:
             elif "REJEICAO" in texto:
 
                 status = "REJEITADA"
-except:
-    pass
 
+            # =========================
+            # DOCUMENTO / IE
+            # =========================
+            cnpj = txt(
+                dest,
+                'nfe:CNPJ'
+            )
 
-# =========================
-# DOCUMENTO / IE
-# =========================
-cnpj = get_text(dest, 'nfe:CNPJ', ns)
+            cpf = txt(
+                dest,
+                'nfe:CPF'
+            )
 
-cpf = get_text(dest, 'nfe:CPF', ns)
+            ie_dest = txt(
+                dest,
+                'nfe:IE'
+            )
 
-ie_dest = get_text(
-    dest,
-    'nfe:IE',
-    ns
-)
+            documento = (
+                cnpj
+                if cnpj != ""
+                else cpf
+            )
 
-documento = (
-    cnpj
-    if cnpj != ""
-    else cpf
-)
-
+            tipo_cliente = (
+                "PJ"
+                if cnpj != ""
+                else "PF"
+            )
 
             # =========================
             # ITENS
@@ -445,6 +446,7 @@ documento = (
                     cofins_tag,
                     'nfe:vCOFINS'
                 )
+
                 # =========================
                 # DIFAL / FCP
                 # =========================
@@ -466,6 +468,7 @@ documento = (
                     icmsufdest,
                     'nfe:vFCPUFDest'
                 )
+
                 # =========================
                 # REGRAS
                 # =========================
@@ -614,19 +617,16 @@ documento = (
 
                     "Chave Acesso": f"'{chave}",
 
+                    "CPF/CNPJ": documento,
+
+                    "IE": ie_dest,
+
                     "Status": status,
 
                     "Destinatario": txt(
                         dest,
                         'nfe:xNome'
                     ),
-
-                    "CPF/CNPJ": (
-                        cnpj if cnpj != ""
-                        else cpf
-                    ),
-
-                    "Tipo Cliente": tipo_cliente,
 
                     "UF Origem": uf_origem,
 
@@ -655,6 +655,7 @@ documento = (
                     "Valor DIFAL": valor_difal,
 
                     "Valor FCP": valor_fcp,
+
                     "Tem Regra ST": (
                         "SIM"
                         if regra_st is not None
