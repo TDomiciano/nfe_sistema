@@ -9,9 +9,9 @@ import io
 # =========================
 st.set_page_config(layout="wide")
 
-st.title("📄 Leitor Fiscal NF-e + Auditor Completo")
+st.title("📄 Leitor Fiscal NF-e + Auditor DIFAL")
 
-st.info("⚠️ XML + ZIP | DIFAL + Regras Fiscais + ST")
+st.info("XML + ZIP | Regras fiscais + ST + DIFAL")
 
 # =========================
 # XML NS
@@ -19,37 +19,93 @@ st.info("⚠️ XML + ZIP | DIFAL + Regras Fiscais + ST")
 ns = {"nfe": "http://www.portalfiscal.inf.br/nfe"}
 
 # =========================
-# REGRAS
+# LEITURA DAS REGRAS
 # =========================
 @st.cache_data
 def carregar_regras():
 
-    regras = pd.read_excel("conf_fiscais.xlsx", sheet_name="Config Fiscal")
-    regras_st = pd.read_excel("conf_fiscais.xlsx", sheet_name="Config ST")
+    regras = pd.read_excel(
+        "conf_fiscais.xlsx",
+        sheet_name="Config Fiscal"
+    )
 
-    regras_dict = {}
-    regras_st_dict = {}
+    regras_st = pd.read_excel(
+        "conf_fiscais.xlsx",
+        sheet_name="Config ST"
+    )
 
-    for _, row in regras.iterrows():
-        chave = (
-            str(row["ncm"]).replace(".0", "").strip(),
-            str(row["origem"]).upper().strip(),
-            str(row["destino"]).upper().strip()
-        )
-        regras_dict[chave] = row.to_dict()
-
-    for _, row in regras_st.iterrows():
-        chave = (
-            str(row["ncm"]).replace(".0", "").strip(),
-            str(row["origem"]).upper().strip(),
-            str(row["destino"]).upper().strip()
-        )
-        regras_st_dict[chave] = row.to_dict()
-
-    return regras_dict, regras_st_dict
+    return regras, regras_st
 
 
-regras_dict, regras_st_dict = carregar_regras()
+regras, regras_st = carregar_regras()
+
+# =========================
+# BUSCA REGRA FISCAL (SEU MODELO)
+# =========================
+def buscar_regra(ncm, origem, destino):
+
+    ncm = str(ncm).replace(".0", "").strip()
+
+    filtro = regras[
+        (regras["ncm"]
+            .astype(str)
+            .str.replace(".0", "", regex=False)
+            .str.strip() == ncm)
+
+        &
+
+        (regras["origem"]
+            .astype(str)
+            .str.upper()
+            .str.strip() == str(origem).upper().strip())
+
+        &
+
+        (regras["destino"]
+            .astype(str)
+            .str.upper()
+            .str.strip() == str(destino).upper().strip())
+    ]
+
+    if not filtro.empty:
+        return filtro.iloc[0]
+
+    return None
+
+
+# =========================
+# BUSCA REGRA ST (SEU MODELO)
+# =========================
+def buscar_regra_st(ncm, origem, destino):
+
+    ncm = str(ncm).replace(".0", "").strip()
+
+    filtro = regras_st[
+        (regras_st["ncm"]
+            .astype(str)
+            .str.replace(".0", "", regex=False)
+            .str.strip() == ncm)
+
+        &
+
+        (regras_st["origem"]
+            .astype(str)
+            .str.upper()
+            .str.strip() == str(origem).upper().strip())
+
+        &
+
+        (regras_st["destino"]
+            .astype(str)
+            .str.upper()
+            .str.strip() == str(destino).upper().strip())
+    ]
+
+    if not filtro.empty:
+        return filtro.iloc[0]
+
+    return None
+
 
 # =========================
 # XML SAFE
@@ -61,7 +117,7 @@ def txt(el, tag):
     return x.text if x is not None else ""
 
 # =========================
-# DIFAL
+# DIFAL BASE DUPLA
 # =========================
 def calcular_difal(valor, aliq_inter=0.12, aliq_interna=0.18):
     icms_origem = valor * aliq_inter
@@ -69,6 +125,7 @@ def calcular_difal(valor, aliq_inter=0.12, aliq_interna=0.18):
     base2 = base1 / (1 - aliq_interna)
     icms_interno = base2 * aliq_interna
     return round(icms_interno - icms_origem, 2)
+
 
 # =========================
 # UPLOAD
@@ -94,6 +151,7 @@ if arquivos:
                 if n.endswith(".xml"):
                     xmls.append(io.BytesIO(z.read(n)))
 
+
 # =========================
 # PROCESSAMENTO
 # =========================
@@ -103,7 +161,9 @@ if xmls:
 
     st.success(f"📦 {len(xmls)} XMLs carregados")
 
-    for arq in xmls:
+    barra = st.progress(0)
+
+    for i, arq in enumerate(xmls):
 
         try:
             arq.seek(0)
@@ -121,8 +181,12 @@ if xmls:
 
             cnpj = txt(dest, 'nfe:CNPJ')
             cpf = txt(dest, 'nfe:CPF')
-
             documento = cnpj if cnpj else cpf
+
+            ie_dest = ""
+            if dest is not None:
+                ie_tag = dest.find('.//nfe:IE', ns)
+                ie_dest = ie_tag.text if ie_tag is not None else ""
 
             itens = root.findall('.//nfe:det', ns)
 
@@ -150,18 +214,18 @@ if xmls:
                 # DIFAL
                 # =========================
                 difal_xml = float(txt(icms_ufdest, 'nfe:vICMSUFDest') or 0)
-                difal_calc = calcular_difal(total)
+                fcp_xml = float(txt(icms_ufdest, 'nfe:vFCPUFDest') or 0)
 
+                difal_calc = calcular_difal(total)
                 difal_diff = round(difal_xml - difal_calc, 2)
-                difal_status = "OK" if abs(difal_diff) <= 0.01 else "DIVERGENTE"
+
+                status_difal = "OK" if abs(difal_diff) <= 0.01 else "DIVERGENTE"
 
                 # =========================
                 # REGRAS FISCAIS
                 # =========================
-                chave = (ncm, uf_origem, uf_destino)
-
-                regra = regras_dict.get(chave)
-                regra_st = regras_st_dict.get(chave)
+                regra = buscar_regra(ncm, uf_origem, uf_destino)
+                regra_st = buscar_regra_st(ncm, uf_origem, uf_destino)
 
                 divergencias = []
 
@@ -171,13 +235,13 @@ if xmls:
                 st_list = ["10", "30", "60", "70"]
                 tem_st = cst in st_list
 
-                if regra_st and not tem_st:
+                if regra_st is not None and not tem_st:
                     divergencias.append("DEVERIA TER ST")
 
-                if not regra_st and tem_st:
+                if regra_st is None and tem_st:
                     divergencias.append("ST SEM REGRA")
 
-                validacao_geral = "OK" if len(divergencias) == 0 else "DIVERGENTE"
+                validacao = "OK" if len(divergencias) == 0 else "DIVERGENTE"
 
                 dados.append({
 
@@ -189,6 +253,7 @@ if xmls:
 
                     # CLIENTE
                     "CPF/CNPJ": documento,
+                    "IE": ie_dest,
 
                     # LOCAL
                     "UF Origem": uf_origem,
@@ -208,22 +273,28 @@ if xmls:
                     "DIFAL XML": difal_xml,
                     "DIFAL Calculado": difal_calc,
                     "Diferença DIFAL": difal_diff,
-                    "Status DIFAL": difal_status,
+                    "Status DIFAL": status_difal,
+
+                    # FCP
+                    "FCP XML": fcp_xml,
 
                     # REGRAS
-                    "Tem Regra ST": "SIM" if regra_st else "NAO",
-                    "Validação Fiscal": validacao_geral,
+                    "Tem Regra ST": "SIM" if regra_st is not None else "NAO",
+                    "Validação Fiscal": validacao,
                     "Divergências": " | ".join(divergencias),
 
                     # VALOR
                     "Valor Produto": round(total, 2)
                 })
 
+            barra.progress((i + 1) / len(xmls))
+
         except Exception as e:
             st.error(f"Erro XML: {e}")
 
+
 # =========================
-# RESULTADO
+# RESULTADO FINAL
 # =========================
 if dados:
 
