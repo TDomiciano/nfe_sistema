@@ -321,7 +321,7 @@ if xmls:
 # DOCUMENTO / IE
 # =========================
 cnpj = get_text(dest, 'nfe:CNPJ', ns)
-
+)
 cpf = get_text(dest, 'nfe:CPF', ns)
 
 ie_dest = get_text(
