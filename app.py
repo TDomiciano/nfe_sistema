@@ -26,7 +26,7 @@ st.markdown("""
 # =========================
 # TITULO
 # =========================
-st.title("📄 Leitor Fiscal NF-e")
+st.title("📄 Leitor Fiscal NF-e + Auditor DIFAL")
 
 st.info("⚠️ O sistema suporta XML e ZIP contendo XMLs.")
 
@@ -96,6 +96,18 @@ def buscar_regra(dicionario, ncm, origem, destino):
         str(destino).upper().strip()
     )
     return dicionario.get(chave)
+
+# =========================
+# DIFAL BASE DUPLA
+# =========================
+def calcular_difal_base_dupla(valor, aliq_interestadual=0.12, aliq_interna=0.18):
+    icms_origem = valor * aliq_interestadual
+    base1 = valor - icms_origem
+    base2 = base1 / (1 - aliq_interna)
+    icms_interno = base2 * aliq_interna
+    difal = icms_interno - icms_origem
+
+    return icms_origem, base2, icms_interno, difal
 
 # =========================
 # UPLOAD
@@ -217,7 +229,6 @@ if xmls:
                 ie_dest = ie_tag.text if ie_tag is not None else ""
 
             documento = cnpj if cnpj else cpf
-
             tipo_cliente = "PJ" if cnpj else "PF"
 
             itens = root.findall('.//nfe:det', ns)
@@ -239,8 +250,8 @@ if xmls:
                 quantidade = txt(prod, 'nfe:qCom')
 
                 cst = txt(icms, 'nfe:CST') or txt(icms, 'nfe:CSOSN')
-                aliquota = txt(icms, 'nfe:pICMS')
-                valor_icms = txt(icms, 'nfe:vICMS')
+                aliquota = float(txt(icms, 'nfe:pICMS') or 0)
+                valor_icms_xml = float(txt(icms, 'nfe:vICMS') or 0)
 
                 valor_bruto = float(txt(prod, 'nfe:vProd') or 0)
                 valor_desc = float(txt(prod, 'nfe:vDesc') or 0)
@@ -263,6 +274,13 @@ if xmls:
                 if regra_st is None and tem_st:
                     divergencias.append("Produto possui ST sem regra")
 
+                # =========================
+                # DIFAL AUDITOR
+                # =========================
+                icms_origem, base2, icms_interno, difal = calcular_difal_base_dupla(valor_final)
+
+                diferenca_difal = valor_icms_xml - icms_interno
+
                 dados.append({
 
                     "Numero NF": txt(ide, 'nfe:nNF'),
@@ -271,7 +289,6 @@ if xmls:
                     "Chave Acesso": f"'{chave}",
 
                     "CPF/CNPJ": documento,
-
                     "IE": str(ie_dest or ""),
 
                     "Status": status,
@@ -288,16 +305,18 @@ if xmls:
                     "CFOP XML": cfop,
                     "CST XML": cst,
                     "Aliquota ICMS XML": aliquota,
-                    "Valor ICMS": valor_icms,
+                    "Valor ICMS XML": valor_icms_xml,
 
-                    "Valor DIFAL": txt(imposto.find('.//nfe:ICMSUFDest', ns) if imposto is not None else None, 'nfe:vICMSUFDest'),
+                    "ICMS Origem Calc": round(icms_origem, 2),
+                    "ICMS Interno Calc": round(icms_interno, 2),
+                    "DIFAL Calc": round(difal, 2),
+                    "Diferença ICMS vs Calc": round(diferenca_difal, 2),
 
+                    "Valor DIFAL XML": txt(imposto.find('.//nfe:ICMSUFDest', ns) if imposto is not None else None, 'nfe:vICMSUFDest'),
                     "Valor FCP": txt(imposto.find('.//nfe:ICMSUFDest', ns) if imposto is not None else None, 'nfe:vFCPUFDest'),
 
                     "Tem Regra ST": "SIM" if regra_st else "NAO",
-
                     "Validacao": "OK" if len(divergencias) == 0 else "DIVERGENTE",
-
                     "Divergencias": " | ".join(divergencias),
 
                     "Valor Produto Total": round(valor_final, 2)
