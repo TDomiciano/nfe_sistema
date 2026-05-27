@@ -26,56 +26,16 @@ st.markdown("""
 # =========================
 # TITULO
 # =========================
-st.title("📄 Leitor Fiscal NF-e")
+st.title("📄 Leitor Fiscal NF-e + Auditor DIFAL")
 
-st.info("⚠️ O sistema suporta XML e ZIP contendo XMLs.")
+st.info("⚠️ Suporta XML e ZIP contendo XMLs")
 
 # =========================
-# NAMESPACE XML
+# NAMESPACE
 # =========================
 ns = {
     "nfe": "http://www.portalfiscal.inf.br/nfe"
 }
-
-# =========================
-# CARREGA REGRAS
-# =========================
-@st.cache_data
-def carregar_regras():
-
-    regras = pd.read_excel(
-        "conf_fiscais.xlsx",
-        sheet_name="Config Fiscal"
-    )
-
-    regras_st = pd.read_excel(
-        "conf_fiscais.xlsx",
-        sheet_name="Config ST"
-    )
-
-    regras_dict = {}
-    regras_st_dict = {}
-
-    for _, row in regras.iterrows():
-        chave = (
-            str(row["ncm"]).replace(".0", "").strip(),
-            str(row["origem"]).upper().strip(),
-            str(row["destino"]).upper().strip()
-        )
-        regras_dict[chave] = row.to_dict()
-
-    for _, row in regras_st.iterrows():
-        chave = (
-            str(row["ncm"]).replace(".0", "").strip(),
-            str(row["origem"]).upper().strip(),
-            str(row["destino"]).upper().strip()
-        )
-        regras_st_dict[chave] = row.to_dict()
-
-    return regras_dict, regras_st_dict
-
-
-regras_dict, regras_st_dict = carregar_regras()
 
 # =========================
 # FUNÇÃO SEGURA XML
@@ -87,18 +47,7 @@ def txt(elemento, tag):
     return achou.text if achou is not None else ""
 
 # =========================
-# BUSCA REGRA
-# =========================
-def buscar_regra(dicionario, ncm, origem, destino):
-    chave = (
-        str(ncm).replace(".0", "").strip(),
-        str(origem).upper().strip(),
-        str(destino).upper().strip()
-    )
-    return dicionario.get(chave)
-
-# =========================
-# DIFAL BASE DUPLA (CALCULADO)
+# DIFAL BASE DUPLA
 # =========================
 def calcular_difal(valor, aliq_interestadual=0.12, aliq_interna=0.18):
     icms_origem = valor * aliq_interestadual
@@ -126,17 +75,12 @@ if arquivos:
             xmls.append(arq)
 
         elif arq.name.lower().endswith(".zip"):
+            zip_file = zipfile.ZipFile(arq)
 
-            try:
-                zip_file = zipfile.ZipFile(arq)
-
-                for nome in zip_file.namelist():
-                    if nome.lower().endswith(".xml"):
-                        xml_bytes = zip_file.read(nome)
-                        xmls.append(io.BytesIO(xml_bytes))
-
-            except Exception as e:
-                st.error(f"Erro ao abrir ZIP {arq.name}: {e}")
+            for nome in zip_file.namelist():
+                if nome.lower().endswith(".xml"):
+                    xml_bytes = zip_file.read(nome)
+                    xmls.append(io.BytesIO(xml_bytes))
 
 # =========================
 # PROCESSAMENTO
@@ -146,8 +90,8 @@ canceladas = set()
 
 if xmls:
 
-    total = len(xmls)
-    st.success(f"📦 {total} XMLs encontrados")
+    st.success(f"📦 {len(xmls)} XMLs carregados")
+
     barra = st.progress(0)
 
     # =========================
@@ -162,17 +106,13 @@ if xmls:
             texto = conteudo.decode("utf-8", errors="ignore").upper()
 
             if "CANCELAMENTO" in texto and "110111" in texto:
-
                 root = ET.fromstring(conteudo)
-
                 inf_evento = root.find(".//nfe:infEvento", ns)
-
                 chave = txt(inf_evento, "nfe:chNFe")
-
                 if chave:
                     canceladas.add(chave)
 
-            barra.progress((i + 1) / total)
+            barra.progress((i + 1) / len(xmls))
 
         except:
             pass
@@ -185,8 +125,6 @@ if xmls:
         try:
             arq.seek(0)
             conteudo = arq.read()
-
-            texto = conteudo.decode("utf-8", errors="ignore").upper()
 
             root = ET.fromstring(conteudo)
 
@@ -213,10 +151,6 @@ if xmls:
 
             if chave in canceladas:
                 status = "CANCELADA"
-            elif "DENEGADO" in texto:
-                status = "DENEGADA"
-            elif "REJEICAO" in texto:
-                status = "REJEITADA"
 
             cnpj = txt(dest, 'nfe:CNPJ')
             cpf = txt(dest, 'nfe:CPF')
@@ -230,11 +164,7 @@ if xmls:
                 prod = item.find('nfe:prod', ns)
                 imposto = item.find('nfe:imposto', ns)
 
-                icms = (
-                    imposto.find('.//nfe:ICMS/*', ns)
-                    if imposto is not None else None
-                )
-
+                icms = imposto.find('.//nfe:ICMS/*', ns) if imposto is not None else None
                 icms_ufdest = imposto.find('.//nfe:ICMSUFDest', ns) if imposto is not None else None
 
                 ncm = txt(prod, 'nfe:NCM')
@@ -244,68 +174,79 @@ if xmls:
                 quantidade = txt(prod, 'nfe:qCom')
 
                 cst = txt(icms, 'nfe:CST') or txt(icms, 'nfe:CSOSN')
+                aliquota = txt(icms, 'nfe:pICMS')
+                valor_icms = txt(icms, 'nfe:vICMS')
 
                 valor_bruto = float(txt(prod, 'nfe:vProd') or 0)
                 valor_desc = float(txt(prod, 'nfe:vDesc') or 0)
-                valor_final = valor_bruto - valor_desc
+                valor_total = valor_bruto - valor_desc
 
                 # =========================
                 # DIFAL XML
                 # =========================
                 difal_xml = float(txt(icms_ufdest, 'nfe:vICMSUFDest') or 0)
+                fcp_xml = float(txt(icms_ufdest, 'nfe:vFCPUFDest') or 0)
 
                 # =========================
                 # DIFAL CALCULADO
                 # =========================
-                difal_calc = calcular_difal(valor_final)
+                difal_calc = calcular_difal(valor_total)
 
-                # =========================
-                # COMPARAÇÃO
-                # =========================
-                diferenca_difal = round(difal_xml - difal_calc, 2)
+                difal_diff = round(difal_xml - difal_calc, 2)
 
-                status_difal = "OK" if abs(diferenca_difal) <= 0.01 else "DIVERGENTE"
+                validacao = "OK" if abs(difal_diff) <= 0.01 else "DIVERGENTE"
 
                 dados.append({
 
+                    # IDENTIFICAÇÃO
                     "Numero NF": txt(ide, 'nfe:nNF'),
                     "Serie": txt(ide, 'nfe:serie'),
                     "Emissao": txt(ide, 'nfe:dhEmi'),
-                    "Chave Acesso": f"'{chave}",
+                    "Chave de Acesso": f"'{chave}",
 
+                    # CLIENTE
                     "CPF/CNPJ": documento,
+                    "Status": status,
+                    "Destinatario": txt(dest, 'nfe:xNome'),
 
+                    # LOCAL
                     "UF Origem": uf_origem,
                     "UF Destino": uf_destino,
 
+                    # PRODUTO
                     "Produto": produto,
-                    "Codigo": codigo,
+                    "Codigo do Produto": codigo,
                     "Quantidade": quantidade,
 
+                    # TRIBUTOS
                     "NCM": ncm,
-                    "CFOP XML": cfop,
-                    "CST XML": cst,
+                    "CFOP": cfop,
+                    "CST": cst,
+                    "Aliquota ICMS XML": aliquota,
+                    "Valor ICMS": valor_icms,
 
-                    "Valor Produto": round(valor_final, 2),
-
-                    # =========================
                     # DIFAL
-                    # =========================
-                    "DIFAL XML": difal_xml,
+                    "Valor DIFAL XML": difal_xml,
                     "DIFAL Calculado": difal_calc,
-                    "Diferença DIFAL": diferenca_difal,
-                    "Status DIFAL": status_difal,
+                    "Diferenca no DIFAL": difal_diff,
 
-                    "Status NF": status
+                    # FCP
+                    "Valor FCP": fcp_xml,
+
+                    # VALIDAÇÃO
+                    "Validacao": validacao,
+
+                    # VALOR
+                    "Valor do Produto Total": round(valor_total, 2)
                 })
 
-            barra.progress((i + 1) / total)
+            barra.progress((i + 1) / len(xmls))
 
         except Exception as e:
-            st.error(f"Erro no arquivo: {e}")
+            st.error(f"Erro no XML: {e}")
 
 # =========================
-# RESULTADO
+# RESULTADO FINAL
 # =========================
 if dados:
 
@@ -324,11 +265,11 @@ if dados:
     output.seek(0)
 
     st.download_button(
-        "⬇️ Baixar Excel",
+        "⬇️ Baixar Relatório Excel",
         output,
         file_name="relatorio_fiscal.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
 else:
-    st.info("Envie XMLs ou ZIPs para iniciar.")
+    st.info("Envie XML ou ZIP para iniciar.")
