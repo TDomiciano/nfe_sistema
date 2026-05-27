@@ -293,7 +293,7 @@ if xmls:
                 'nfe:IE',
                 ns
             )
-                documento = (
+             documento = (
                 cnpj,
                 if cnpj != ""
                 else cpf
