@@ -6,7 +6,7 @@ import zipfile
 import io
 
 # =========================
-# CONFIG PAGINA
+# CONFIG
 # =========================
 st.set_page_config(layout="wide")
 
@@ -21,21 +21,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+st.title("📄 Auditor Fiscal NF-e Completo")
+
 # =========================
-# REGRAS (IGUAL AO SEU ORIGINAL)
+# REGRAS (PLANILHA)
 # =========================
 @st.cache_data
 def carregar_regras():
 
-    regras = pd.read_excel(
-        "conf_fiscais.xlsx",
-        sheet_name="Config Fiscal"
-    )
-
-    regras_st = pd.read_excel(
-        "conf_fiscais.xlsx",
-        sheet_name="Config ST"
-    )
+    regras = pd.read_excel("conf_fiscais.xlsx", sheet_name="Config Fiscal")
+    regras_st = pd.read_excel("conf_fiscais.xlsx", sheet_name="Config ST")
 
     return regras, regras_st
 
@@ -46,12 +41,9 @@ regras, regras_st = carregar_regras()
 # XML SAFE
 # =========================
 def get_text(element, tag, ns):
-
     if element is None:
         return ""
-
     found = element.find(tag, ns)
-
     return found.text if found is not None else ""
 
 # =========================
@@ -67,12 +59,8 @@ def calcular_difal(valor, aliq_inter=0.12, aliq_interna=0.18):
     return round(icms_interno - icms_origem, 2)
 
 # =========================
-# INTERFACE
+# UPLOAD
 # =========================
-st.title("📄 Leitor Fiscal NF-e + Auditor Completo")
-
-st.info("XML + ZIP | Validação Fiscal + DIFAL + ST")
-
 uploads = st.file_uploader(
     "Envie XML ou ZIP",
     type=["xml", "zip"],
@@ -89,20 +77,12 @@ if uploads:
             arquivos.append(upload)
 
         elif upload.name.lower().endswith(".zip"):
-
-            try:
-                with zipfile.ZipFile(upload, 'r') as zip_ref:
-
-                    for nome in zip_ref.namelist():
-
-                        if nome.lower().endswith(".xml"):
-
-                            xml_file = io.BytesIO(zip_ref.read(nome))
-                            xml_file.name = nome
-                            arquivos.append(xml_file)
-
-            except Exception as e:
-                st.error(f"Erro ZIP: {e}")
+            with zipfile.ZipFile(upload, "r") as zip_ref:
+                for nome in zip_ref.namelist():
+                    if nome.lower().endswith(".xml"):
+                        xml_file = io.BytesIO(zip_ref.read(nome))
+                        xml_file.name = nome
+                        arquivos.append(xml_file)
 
 dados = []
 
@@ -111,73 +91,71 @@ dados = []
 # =========================
 if arquivos:
 
-    st.write(f"📦 Total arquivos: {len(arquivos)}")
-
+    st.write(f"📦 Total XMLs: {len(arquivos)}")
     barra = st.progress(0)
 
-    ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
+    ns = {"nfe": "http://www.portalfiscal.inf.br/nfe"}
 
     for i, arq in enumerate(arquivos):
 
         try:
 
             arq.seek(0)
-
             tree = ET.parse(arq)
             root = tree.getroot()
 
-            ide = root.find('.//nfe:ide', ns)
-            emit = root.find('.//nfe:emit', ns)
-            dest = root.find('.//nfe:dest', ns)
+            ide = root.find(".//nfe:ide", ns)
+            emit = root.find(".//nfe:emit", ns)
+            dest = root.find(".//nfe:dest", ns)
 
-            ender_emit = emit.find('nfe:enderEmit', ns) if emit is not None else None
-            ender_dest = dest.find('nfe:enderDest', ns) if dest is not None else None
+            ender_emit = emit.find("nfe:enderEmit", ns) if emit is not None else None
+            ender_dest = dest.find("nfe:enderDest", ns) if dest is not None else None
 
-            uf_origem = get_text(ender_emit, 'nfe:UF', ns)
-            uf_destino = get_text(ender_dest, 'nfe:UF', ns)
+            uf_origem = get_text(ender_emit, "nfe:UF", ns)
+            uf_destino = get_text(ender_dest, "nfe:UF", ns)
 
-            cnpj = get_text(dest, 'nfe:CNPJ', ns)
-            cpf = get_text(dest, 'nfe:CPF', ns)
+            cnpj = get_text(dest, "nfe:CNPJ", ns)
+            cpf = get_text(dest, "nfe:CPF", ns)
 
             tipo_cliente = "PJ" if cnpj else "PF"
             documento = cnpj if cnpj else cpf
 
             ie_dest = ""
             if dest is not None:
-                ie_tag = dest.find('.//nfe:IE', ns)
+                ie_tag = dest.find(".//nfe:IE", ns)
                 ie_dest = ie_tag.text if ie_tag is not None else ""
 
-            itens = root.findall('.//nfe:det', ns)
+            itens = root.findall(".//nfe:det", ns)
 
             for item in itens:
 
-                prod = item.find('nfe:prod', ns)
-                imposto = item.find('nfe:imposto', ns)
+                prod = item.find("nfe:prod", ns)
+                imposto = item.find("nfe:imposto", ns)
 
-                icms = imposto.find('.//nfe:ICMS/*', ns) if imposto is not None else None
-                icms_ufdest = imposto.find('.//nfe:ICMSUFDest', ns) if imposto is not None else None
+                icms = imposto.find(".//nfe:ICMS/*", ns) if imposto is not None else None
+                icms_ufdest = imposto.find(".//nfe:ICMSUFDest", ns) if imposto is not None else None
 
-                ncm_xml = get_text(prod, 'nfe:NCM', ns)
-                cfop_xml = get_text(prod, 'nfe:CFOP', ns)
-                produto = get_text(prod, 'nfe:xProd', ns)
-                codigo = get_text(prod, 'nfe:cProd', ns)
-                qtd = get_text(prod, 'nfe:qCom', ns)
+                ncm = get_text(prod, "nfe:NCM", ns)
+                cfop_xml = get_text(prod, "nfe:CFOP", ns)
+                produto = get_text(prod, "nfe:xProd", ns)
+                codigo = get_text(prod, "nfe:cProd", ns)
+                qtd = get_text(prod, "nfe:qCom", ns)
 
                 cst_xml = ""
                 if icms is not None:
-                    cst_xml = get_text(icms, 'nfe:CST', ns) or get_text(icms, 'nfe:CSOSN', ns)
+                    cst_xml = get_text(icms, "nfe:CST", ns) or get_text(icms, "nfe:CSOSN", ns)
 
-                aliquota_xml = get_text(icms, 'nfe:pICMS', ns)
+                aliquota_xml = get_text(icms, "nfe:pICMS", ns)
 
-                valor_prod = float(get_text(prod, 'nfe:vProd', ns) or 0)
-                valor_desc = float(get_text(prod, 'nfe:vDesc', ns) or 0)
+                valor_prod = float(get_text(prod, "nfe:vProd", ns) or 0)
+                valor_desc = float(get_text(prod, "nfe:vDesc", ns) or 0)
                 valor_total = valor_prod - valor_desc
 
                 # =========================
                 # DIFAL
                 # =========================
-                difal_xml = float(get_text(icms_ufdest, 'nfe:vICMSUFDest', ns) or 0)
-                fcp_xml = float(get_text(icms_ufdest, 'nfe:vFCPUFDest', ns) or 0)
+                difal_xml = float(get_text(icms_ufdest, "nfe:vICMSUFDest", ns) or 0)
+                fcp_xml = float(get_text(icms_ufdest, "nfe:vFCPUFDest", ns) or 0)
 
                 difal_calc = calcular_difal(valor_total)
                 difal_diff = round(difal_xml - difal_calc, 2)
@@ -185,13 +163,13 @@ if arquivos:
                 status_difal = "OK" if abs(difal_diff) <= 0.01 else "DIVERGENTE"
 
                 # =========================
-                # 🔥 VALIDAÇÃO ORIGINAL (IGUAL SEU CÓDIGO QUE FUNCIONAVA)
+                # VALIDAÇÃO FISCAL (PLANILHA - ORIGINAL)
                 # =========================
                 filtro = regras[
                     (regras["ncm"]
                         .astype(str)
                         .str.replace(".0", "", regex=False)
-                        .str.strip() == str(ncm_xml).replace(".0", "").strip())
+                        .str.strip() == str(ncm).replace(".0", "").strip())
 
                     &
 
@@ -211,13 +189,13 @@ if arquivos:
                 regra = filtro.iloc[0] if not filtro.empty else None
 
                 # =========================
-                # ST (MESMA LÓGICA ORIGINAL)
+                # ST (ORIGINAL)
                 # =========================
                 filtro_st = regras_st[
                     (regras_st["ncm"]
                         .astype(str)
                         .str.replace(".0", "", regex=False)
-                        .str.strip() == str(ncm_xml).replace(".0", "").strip())
+                        .str.strip() == str(ncm).replace(".0", "").strip())
 
                     &
 
@@ -238,26 +216,56 @@ if arquivos:
 
                 divergencias = []
 
-                if regra is None:
+                # CFOP + ICMS (planilha)
+                if regra is not None:
+
+                    cfop_regra = (
+                        str(regra["cfop_pj"]) if tipo_cliente == "PJ"
+                        else str(regra["cfop_pf"])
+                    ).replace(".0", "").strip()
+
+                    aliquota_regra = str(regra["aliquota_icms"]).replace(".0", "").strip()
+
+                    if cfop_xml != cfop_regra:
+                        divergencias.append(
+                            f"CFOP XML ({cfop_xml}) diferente da regra ({cfop_regra})"
+                        )
+
+                    try:
+                        if aliquota_xml != "" and float(aliquota_xml) != float(aliquota_regra):
+                            divergencias.append(
+                                f"ICMS XML ({aliquota_xml}) diferente da regra ({aliquota_regra})"
+                            )
+                    except:
+                        pass
+
+                else:
                     divergencias.append("SEM REGRA FISCAL")
 
+                # ST
                 csts_st = ["10", "30", "60", "70"]
                 tem_st = cst_xml in csts_st
+
+                if regra_st is None and tem_st:
+                    divergencias.append("ST SEM REGRA")
 
                 if regra_st is not None and not tem_st:
                     divergencias.append("DEVERIA TER ST")
 
-                if regra_st is None and tem_st:
-                    divergencias.append("ST SEM REGRA")
+                # DIFAL
+                if abs(difal_diff) > 0.01:
+                    divergencias.append(
+                        f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
+                    )
 
                 validacao = "OK" if len(divergencias) == 0 else "DIVERGENTE"
 
                 dados.append({
 
-                    "Numero NF": get_text(ide, 'nfe:nNF', ns),
-                    "Serie": get_text(ide, 'nfe:serie', ns),
+                    "NF": get_text(ide, "nfe:nNF", ns),
+                    "Serie": get_text(ide, "nfe:serie", ns),
 
-                    "Chave": root.find('.//nfe:infNFe', ns).attrib.get("Id", "").replace("NFe", ""),
+                    "Chave": root.find(".//nfe:infNFe", ns).attrib.get("Id", "").replace("NFe", ""),
 
                     "CPF/CNPJ": documento,
                     "IE": ie_dest,
@@ -267,25 +275,24 @@ if arquivos:
 
                     "Produto": produto,
                     "Codigo": codigo,
-                    "Quantidade": qtd,
+                    "Qtd": qtd,
 
-                    "NCM": ncm_xml,
+                    "NCM": ncm,
                     "CFOP": cfop_xml,
                     "CST": cst_xml,
-                    "Aliquota ICMS XML": aliquota_xml,
+                    "Aliquota ICMS": aliquota_xml,
 
-                    "Valor Produto": round(valor_total, 2),
+                    "Valor Produto Total": round(valor_total, 2),
 
                     # DIFAL
                     "DIFAL XML": difal_xml,
                     "DIFAL Calculado": difal_calc,
                     "Diferença DIFAL": difal_diff,
                     "Status DIFAL": status_difal,
-
                     "FCP XML": fcp_xml,
 
                     # REGRAS
-                    "Tem Regra ST": "SIM" if regra_st is not None else "NAO",
+                    "Tem Regra ST": "SIM" if regra_st else "NAO",
                     "Validação Fiscal": validacao,
                     "Divergências": " | ".join(divergencias)
 
@@ -301,7 +308,7 @@ if arquivos:
             st.error(f"Erro XML: {e}")
 
 # =========================
-# RESULTADO
+# OUTPUT
 # =========================
 df = pd.DataFrame(dados)
 
@@ -311,13 +318,18 @@ if not df.empty:
 
     st.dataframe(df, use_container_width=True)
 
-    csv = df.to_csv(index=False, sep=';').encode('utf-8-sig')
+    output = io.BytesIO()
+
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False)
+
+    output.seek(0)
 
     st.download_button(
-        "⬇️ Baixar CSV",
-        csv,
-        "relatorio_fiscal.csv",
-        "text/csv"
+        "⬇️ Baixar Excel",
+        output,
+        file_name="auditoria_fiscal.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
 else:
