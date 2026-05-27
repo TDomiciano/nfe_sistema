@@ -315,6 +315,9 @@ if xmls:
             elif "REJEICAO" in texto:
 
                 status = "REJEITADA"
+except:
+    pass
+
 
 # =========================
 # DOCUMENTO / IE
