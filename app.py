@@ -283,16 +283,22 @@ if xmls:
             )
 
             # =========================
-            # CLIENTE
+            # DOCUMENTO / IE
             # =========================
-            cnpj = txt(dest, 'nfe:CNPJ')
-            cpf = txt(dest, 'nfe:CPF')
+            cnpj = get_text(dest, 'nfe:CNPJ', ns)
+            cpf = get_text(dest, 'nfe:CPF', ns)
 
-            tipo_cliente = (
-                "PJ"
-                if cnpj != ""
-                else "PF"
+            ie_dest = get_text (
+                dest,
+                'nfe:IE',
+                ns
             )
+ 	   documento = (
+                cnpj,
+                if cnpj != ""
+                else cpf
+            )
+
 
             # =========================
             # CHAVE ACESSO
