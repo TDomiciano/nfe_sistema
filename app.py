@@ -282,25 +282,6 @@ if xmls:
                 'nfe:UF'
             )
 
-# =========================
-# DOCUMENTO / IE
-# =========================
-cnpj = get_text(dest, 'nfe:CNPJ', ns)
-
-cpf = get_text(dest, 'nfe:CPF', ns)
-
-ie_dest = get_text(
-    dest,
-    'nfe:IE',
-    ns
-)
-
-documento = (
-    cnpj
-    if cnpj != ""
-    else cpf
-)
-
             # =========================
             # CHAVE ACESSO
             # =========================
@@ -334,6 +315,27 @@ documento = (
             elif "REJEICAO" in texto:
 
                 status = "REJEITADA"
+)
+
+# =========================
+# DOCUMENTO / IE
+# =========================
+cnpj = get_text(dest, 'nfe:CNPJ', ns)
+
+cpf = get_text(dest, 'nfe:CPF', ns)
+
+ie_dest = get_text(
+    dest,
+    'nfe:IE',
+    ns
+)
+
+documento = (
+    cnpj
+    if cnpj != ""
+    else cpf
+)
+
 
             # =========================
             # ITENS
