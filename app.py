@@ -178,10 +178,7 @@ if dados:
     def cor_status(val):
         return "background-color: #ffcccc" if val == "DIVERGENTE" else ""
 
-    st.dataframe(
-        df.style.applymap(cor_status, subset=["Status DIFAL"]),
-        use_container_width=True
-    )
+    st.dataframe(df, use_container_width=True)
 
     st.download_button(
         "⬇️ Baixar Excel",
