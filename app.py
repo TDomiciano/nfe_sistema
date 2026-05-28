@@ -33,9 +33,10 @@ with col1:
     if st.button("🔄 Nova Auditoria"):
 
         st.cache_data.clear()
-        st.rerun()
 
-st.divider()
+        st.session_state.clear()
+
+        st.rerun()
 
 # =========================
 # REGRAS
@@ -93,7 +94,8 @@ def calcular_difal(valor, aliq_inter=0.12, aliq_interna=0.18):
 uploads = st.file_uploader(
     "Envie XML ou ZIP",
     type=["xml", "zip"],
-    accept_multiple_files=True
+    accept_multiple_files=True,
+    key="upload_xmls"
 )
 
 arquivos = []
