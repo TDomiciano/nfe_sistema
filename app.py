@@ -318,10 +318,127 @@ if not df.empty:
 
     st.dataframe(df, use_container_width=True)
 
+    # =========================
+    # AUDITORIA SEQUÊNCIA NF
+    # =========================
+    st.subheader("🔎 Auditoria Sequência NF")
+
+    df_seq = df.copy()
+
+    # CONVERTE NF
+    df_seq["NF"] = pd.to_numeric(
+        df_seq["NF"],
+        errors="coerce"
+    )
+
+    quebras = []
+
+    # ANALISA POR SÉRIE
+    for serie in df_seq["Serie"].dropna().unique():
+
+        notas = sorted(
+
+            df_seq[
+                df_seq["Serie"] == serie
+            ]["NF"]
+
+            .dropna()
+            .astype(int)
+            .unique()
+        )
+
+        if len(notas) > 1:
+
+            menor = min(notas)
+            maior = max(notas)
+
+            todas = set(range(menor, maior + 1))
+            existentes = set(notas)
+
+            faltantes = sorted(
+                list(todas - existentes)
+            )
+
+            if len(faltantes) > 0:
+
+                quebras.append({
+
+                    "Serie": serie,
+
+                    "Menor NF": menor,
+
+                    "Maior NF": maior,
+
+                    "Qtd Quebras": len(faltantes),
+
+                    "Notas Faltantes":
+                        ", ".join(
+                            map(str, faltantes[:100])
+                        )
+
+                })
+
+    # =========================
+    # RESULTADO AUDITORIA
+    # =========================
+    if len(quebras) > 0:
+
+        df_quebras = pd.DataFrame(quebras)
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric(
+            "Séries com Quebra",
+            len(df_quebras)
+        )
+
+        col2.metric(
+            "Total Quebras",
+            sum(df_quebras["Qtd Quebras"])
+        )
+
+        col3.metric(
+            "Status",
+            "ALERTA"
+        )
+
+        st.warning(
+            "⚠️ Quebras de sequência encontradas"
+        )
+
+        st.dataframe(
+            df_quebras,
+            use_container_width=True
+        )
+
+    else:
+
+        st.success(
+            "✅ Nenhuma quebra de sequência encontrada"
+        )
+
+    # =========================
+    # EXPORTAÇÃO EXCEL
+    # =========================
     output = io.BytesIO()
 
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False)
+
+        # ABA PRINCIPAL
+        df.to_excel(
+            writer,
+            index=False,
+            sheet_name="Auditoria Fiscal"
+        )
+
+        # ABA QUEBRAS
+        if len(quebras) > 0:
+
+            df_quebras.to_excel(
+                writer,
+                index=False,
+                sheet_name="Quebra Sequencia"
+            )
 
     output.seek(0)
 
