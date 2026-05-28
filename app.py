@@ -316,8 +316,6 @@ if not df.empty:
 
     st.success(f"✅ {len(df)} registros")
 
-    st.dataframe(df, use_container_width=True)
-
     # =========================
     # AUDITORIA SEQUÊNCIA NF
     # =========================
@@ -325,7 +323,6 @@ if not df.empty:
 
     df_seq = df.copy()
 
-    # CONVERTE NF
     df_seq["NF"] = pd.to_numeric(
         df_seq["NF"],
         errors="coerce"
@@ -418,20 +415,28 @@ if not df.empty:
         )
 
     # =========================
-    # EXPORTAÇÃO EXCEL
+    # TABELA PRINCIPAL
+    # =========================
+    st.subheader("📊 Auditoria Fiscal")
+
+    st.dataframe(
+        df,
+        use_container_width=True
+    )
+
+    # =========================
+    # EXPORTAÇÃO
     # =========================
     output = io.BytesIO()
 
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
 
-        # ABA PRINCIPAL
         df.to_excel(
             writer,
             index=False,
             sheet_name="Auditoria Fiscal"
         )
 
-        # ABA QUEBRAS
         if len(quebras) > 0:
 
             df_quebras.to_excel(
