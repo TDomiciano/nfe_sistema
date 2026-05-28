@@ -24,6 +24,21 @@ st.markdown("""
 st.title("📄 Auditor Fiscal NF-e Completo")
 
 # =========================
+# BOTÃO NOVA AUDITORIA
+# =========================
+col1, col2 = st.columns([1, 5])
+
+with col1:
+
+    if st.button("🔄 Nova Auditoria"):
+
+        st.cache_data.clear()
+
+        st.rerun()
+
+st.divider()
+
+# =========================
 # REGRAS (PLANILHA)
 # =========================
 @st.cache_data
