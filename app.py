@@ -332,7 +332,7 @@ if not df.empty:
     st.success(f"✅ {len(df)} registros")
 
     # =========================
-    # AUDITORIA SEQUÊNCIA NF
+    # AUDITORIA SEQUÊNCIA
     # =========================
     st.subheader("🔎 Auditoria Sequência NF")
 
@@ -345,7 +345,6 @@ if not df.empty:
 
     quebras = []
 
-    # ANALISA POR SÉRIE
     for serie in df_seq["Serie"].dropna().unique():
 
         notas = sorted(
@@ -376,11 +375,8 @@ if not df.empty:
                 quebras.append({
 
                     "Serie": serie,
-
                     "Menor NF": menor,
-
                     "Maior NF": maior,
-
                     "Qtd Quebras": len(faltantes),
 
                     "Notas Faltantes":
@@ -390,9 +386,6 @@ if not df.empty:
 
                 })
 
-    # =========================
-    # RESULTADO AUDITORIA
-    # =========================
     if len(quebras) > 0:
 
         df_quebras = pd.DataFrame(quebras)
@@ -429,53 +422,54 @@ if not df.empty:
             "✅ Nenhuma quebra de sequência encontrada"
         )
 
-   # =========================
-# TABELA PRINCIPAL
-# =========================
-col1, col2 = st.columns([4, 1])
+    # =========================
+    # HEADER TABELA + BOTÃO
+    # =========================
+    col1, col2 = st.columns([4, 1])
 
-with col1:
-    st.subheader("📊 Auditoria Fiscal")
+    with col1:
+        st.subheader("📊 Auditoria Fiscal")
 
-# =========================
-# EXPORTAÇÃO
-# =========================
-output = io.BytesIO()
+    # =========================
+    # EXPORTAÇÃO
+    # =========================
+    output = io.BytesIO()
 
-with pd.ExcelWriter(output, engine="openpyxl") as writer:
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
 
-    df.to_excel(
-        writer,
-        index=False,
-        sheet_name="Auditoria Fiscal"
-    )
-
-    if len(quebras) > 0:
-
-        df_quebras.to_excel(
+        df.to_excel(
             writer,
             index=False,
-            sheet_name="Quebra Sequencia"
+            sheet_name="Auditoria Fiscal"
         )
 
-output.seek(0)
+        if len(quebras) > 0:
 
-with col2:
+            df_quebras.to_excel(
+                writer,
+                index=False,
+                sheet_name="Quebra Sequencia"
+            )
 
-    st.download_button(
-        "⬇️ Baixar Excel",
-        output,
-        file_name="auditoria_fiscal.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    output.seek(0)
+
+    with col2:
+
+        st.download_button(
+            "⬇️ Baixar Excel",
+            output,
+            file_name="auditoria_fiscal.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    # =========================
+    # DATAFRAME
+    # =========================
+    st.dataframe(
+        df,
+        use_container_width=True
     )
 
-# =========================
-# DATAFRAME
-# =========================
-st.dataframe(
-    df,
-    use_container_width=True
-)
-
 else:
+
     st.info("Envie XML ou ZIP")
