@@ -34,7 +34,7 @@ with col1:
 
         st.cache_data.clear()
 
-        st.session_state.clear()
+        st.session_state.upload_key += 1
 
         st.rerun()
 
@@ -95,7 +95,7 @@ uploads = st.file_uploader(
     "Envie XML ou ZIP",
     type=["xml", "zip"],
     accept_multiple_files=True,
-    key="upload_xmls"
+    key=f"upload_xmls_{st.session_state.upload_key}"
 )
 
 arquivos = []
