@@ -24,6 +24,12 @@ st.markdown("""
 st.title("📄 Auditor Fiscal NF-e Completo")
 
 # =========================
+# SESSION STATE
+# =========================
+if "upload_key" not in st.session_state:
+    st.session_state.upload_key = 0
+
+# =========================
 # BOTÃO NOVA AUDITORIA
 # =========================
 col1, col2 = st.columns([1, 5])
@@ -32,14 +38,14 @@ with col1:
 
     if st.button("🔄 Nova Auditoria"):
 
-        st.cache_data.clear()
-
         st.session_state.upload_key += 1
 
         st.rerun()
 
+st.divider()
+
 # =========================
-# REGRAS
+# REGRAS (PLANILHA)
 # =========================
 @st.cache_data
 def carregar_regras():
@@ -71,11 +77,14 @@ def get_text(element, tag, ns):
 
     return found.text if found is not None else ""
 
-
 # =========================
 # DIFAL BASE DUPLA
 # =========================
-def calcular_difal(valor, aliq_inter=0.12, aliq_interna=0.18):
+def calcular_difal(
+    valor,
+    aliq_inter=0.12,
+    aliq_interna=0.18
+):
 
     icms_origem = valor * aliq_inter
 
@@ -85,8 +94,10 @@ def calcular_difal(valor, aliq_inter=0.12, aliq_interna=0.18):
 
     icms_interno = base2 * aliq_interna
 
-    return round(icms_interno - icms_origem, 2)
-
+    return round(
+        icms_interno - icms_origem,
+        2
+    )
 
 # =========================
 # UPLOAD
@@ -104,10 +115,12 @@ if uploads:
 
     for upload in uploads:
 
+        # XML
         if upload.name.lower().endswith(".xml"):
 
             arquivos.append(upload)
 
+        # ZIP
         elif upload.name.lower().endswith(".zip"):
 
             try:
@@ -128,11 +141,10 @@ if uploads:
 
             except Exception as e:
 
-                st.error(f"Erro ZIP: {e}")
+                st.error(
+                    f"Erro ao abrir ZIP {upload.name}: {e}"
+                )
 
-# =========================
-# DADOS
-# =========================
 dados = []
 
 # =========================
@@ -145,7 +157,7 @@ chaves_canceladas = set()
 # =========================
 if arquivos:
 
-    st.write(f"📦 Total XMLs encontrados: {len(arquivos)}")
+    st.write(f"📦 Total XMLs: {len(arquivos)}")
 
     barra = st.progress(0)
 
@@ -163,6 +175,7 @@ if arquivos:
             arq.seek(0)
 
             tree = ET.parse(arq)
+
             root = tree.getroot()
 
             xml_str = ET.tostring(
@@ -210,16 +223,11 @@ if arquivos:
                         chave_evento
                     )
 
-            del tree
-            del root
-
-            gc.collect()
-
         except:
             pass
 
     # =========================
-    # PROCESSA XMLS
+    # LOOP XMLS
     # =========================
     for i, arq in enumerate(arquivos):
 
@@ -228,14 +236,21 @@ if arquivos:
             arq.seek(0)
 
             tree = ET.parse(arq)
+
             root = tree.getroot()
 
             # IGNORA EVENTOS
-            if root.find(".//nfe:infEvento", ns) is not None:
+            if root.find(
+                ".//nfe:infEvento",
+                ns
+            ) is not None:
+
                 continue
 
             ide = root.find(".//nfe:ide", ns)
+
             emit = root.find(".//nfe:emit", ns)
+
             dest = root.find(".//nfe:dest", ns)
 
             ender_emit = (
@@ -274,13 +289,13 @@ if arquivos:
                 ns
             )
 
+            documento = cnpj if cnpj else cpf
+
             tipo_cliente = (
                 "PJ"
-                if cnpj != ""
+                if cnpj
                 else "PF"
             )
-
-            documento = cnpj if cnpj else cpf
 
             ie_dest = ""
 
@@ -310,7 +325,8 @@ if arquivos:
             if inf_nfe is not None:
 
                 chave = (
-                    inf_nfe.attrib.get("Id", "")
+                    inf_nfe.attrib
+                    .get("Id", "")
                     .replace("NFe", "")
                 )
 
@@ -336,9 +352,6 @@ if arquivos:
 
                 status = "REJEITADA"
 
-            # =========================
-            # ITENS
-            # =========================
             itens = root.findall(
                 ".//nfe:det",
                 ns
@@ -374,6 +387,18 @@ if arquivos:
                     else None
                 )
 
+                ncm = get_text(
+                    prod,
+                    "nfe:NCM",
+                    ns
+                )
+
+                cfop_xml = get_text(
+                    prod,
+                    "nfe:CFOP",
+                    ns
+                )
+
                 produto = get_text(
                     prod,
                     "nfe:xProd",
@@ -392,33 +417,27 @@ if arquivos:
                     ns
                 )
 
-                ncm = get_text(
-                    prod,
-                    "nfe:NCM",
-                    ns
-                )
+                cst_xml = ""
 
-                cfop_xml = get_text(
-                    prod,
-                    "nfe:CFOP",
-                    ns
-                )
+                if icms is not None:
 
-                cst_xml = (
-                    get_text(icms, "nfe:CST", ns)
-                    or
-                    get_text(icms, "nfe:CSOSN", ns)
-                )
+                    cst_xml = (
+                        get_text(
+                            icms,
+                            "nfe:CST",
+                            ns
+                        )
+                        or
+                        get_text(
+                            icms,
+                            "nfe:CSOSN",
+                            ns
+                        )
+                    )
 
                 aliquota_xml = get_text(
                     icms,
                     "nfe:pICMS",
-                    ns
-                )
-
-                valor_icms = get_text(
-                    icms,
-                    "nfe:vICMS",
                     ns
                 )
 
@@ -438,9 +457,8 @@ if arquivos:
                     ) or 0
                 )
 
-                valor_total = round(
-                    valor_prod - valor_desc,
-                    2
+                valor_total = (
+                    valor_prod - valor_desc
                 )
 
                 # =========================
@@ -471,6 +489,12 @@ if arquivos:
                     2
                 )
 
+                status_difal = (
+                    "OK"
+                    if abs(difal_diff) <= 0.01
+                    else "DIVERGENTE"
+                )
+
                 # =========================
                 # REGRA FISCAL
                 # =========================
@@ -481,9 +505,7 @@ if arquivos:
                         .astype(str)
                         .str.replace(".0", "", regex=False)
                         .str.strip()
-
                         ==
-
                         str(ncm)
                         .replace(".0", "")
                         .strip()
@@ -496,9 +518,7 @@ if arquivos:
                         .astype(str)
                         .str.upper()
                         .str.strip()
-
                         ==
-
                         uf_origem.upper().strip()
                     )
 
@@ -509,9 +529,7 @@ if arquivos:
                         .astype(str)
                         .str.upper()
                         .str.strip()
-
                         ==
-
                         uf_destino.upper().strip()
                     )
                 ]
@@ -532,9 +550,7 @@ if arquivos:
                         .astype(str)
                         .str.replace(".0", "", regex=False)
                         .str.strip()
-
                         ==
-
                         str(ncm)
                         .replace(".0", "")
                         .strip()
@@ -547,9 +563,7 @@ if arquivos:
                         .astype(str)
                         .str.upper()
                         .str.strip()
-
                         ==
-
                         uf_origem.upper().strip()
                     )
 
@@ -560,9 +574,7 @@ if arquivos:
                         .astype(str)
                         .str.upper()
                         .str.strip()
-
                         ==
-
                         uf_destino.upper().strip()
                     )
                 ]
@@ -573,34 +585,28 @@ if arquivos:
                     else None
                 )
 
-                # =========================
-                # DIVERGENCIAS
-                # =========================
                 divergencias = []
 
+                # =========================
+                # CFOP + ICMS
+                # =========================
                 if regra is not None:
 
                     cfop_regra = (
-                        str(regra["cfop_pj"])
-                        if tipo_cliente == "PJ"
-                        else str(regra["cfop_pf"])
-                    )
 
-                    cfop_regra = (
-                        cfop_regra
-                        .replace(".0", "")
-                        .strip()
-                    )
+                        str(regra["cfop_pj"])
+
+                        if tipo_cliente == "PJ"
+
+                        else
+
+                        str(regra["cfop_pf"])
+
+                    ).replace(".0", "").strip()
 
                     aliquota_regra = str(
                         regra["aliquota_icms"]
-                    )
-
-                    aliquota_regra = (
-                        aliquota_regra
-                        .replace(".0", "")
-                        .strip()
-                    )
+                    ).replace(".0", "").strip()
 
                     if cfop_xml != cfop_regra:
 
@@ -613,9 +619,7 @@ if arquivos:
                         if (
                             aliquota_xml != ""
                             and
-                            float(aliquota_xml)
-                            !=
-                            float(aliquota_regra)
+                            float(aliquota_xml) != float(aliquota_regra)
                         ):
 
                             divergencias.append(
@@ -641,15 +645,25 @@ if arquivos:
                     "70"
                 ]
 
-                tem_st = cst_xml in csts_st
+                tem_st = (
+                    cst_xml in csts_st
+                )
 
-                if regra_st is None and tem_st:
+                if (
+                    regra_st is None
+                    and
+                    tem_st
+                ):
 
                     divergencias.append(
                         "ST SEM REGRA"
                     )
 
-                if regra_st is not None and not tem_st:
+                if (
+                    regra_st is not None
+                    and
+                    not tem_st
+                ):
 
                     divergencias.append(
                         "DEVERIA TER ST"
@@ -687,19 +701,13 @@ if arquivos:
                         ns
                     ),
 
-                    "Emissao": get_text(
-                        ide,
-                        "nfe:dhEmi",
-                        ns
-                    ),
+                    "Status": status,
 
                     "Chave": chave,
 
                     "CPF/CNPJ": documento,
 
                     "IE": ie_dest,
-
-                    "Status": status,
 
                     "Destinatario": get_text(
                         dest,
@@ -725,15 +733,18 @@ if arquivos:
 
                     "Aliquota ICMS": aliquota_xml,
 
-                    "Valor ICMS": valor_icms,
-
-                    "Valor Produto Total": valor_total,
+                    "Valor Produto Total": round(
+                        valor_total,
+                        2
+                    ),
 
                     "DIFAL XML": difal_xml,
 
                     "DIFAL Calculado": difal_calc,
 
                     "Diferença DIFAL": difal_diff,
+
+                    "Status DIFAL": status_difal,
 
                     "FCP XML": fcp_xml,
 
@@ -745,15 +756,14 @@ if arquivos:
 
                     "Validação Fiscal": validacao,
 
-                    "Divergências": " | ".join(
-                        divergencias
+                    "Divergências": (
+                        " | ".join(divergencias)
                     )
 
                 })
 
             del tree
             del root
-            del itens
 
             gc.collect()
 
@@ -764,7 +774,7 @@ if arquivos:
         except Exception as e:
 
             st.error(
-                f"Erro no XML {getattr(arq, 'name', 'arquivo')}: {e}"
+                f"Erro XML {arq.name}: {e}"
             )
 
 # =========================
@@ -774,12 +784,16 @@ df = pd.DataFrame(dados)
 
 if not df.empty:
 
-    st.success(f"✅ {len(df)} registros processados")
+    st.success(
+        f"✅ {len(df)} registros"
+    )
 
     # =========================
     # AUDITORIA SEQUÊNCIA
     # =========================
-    st.subheader("🔎 Auditoria Sequência NF")
+    st.subheader(
+        "🔎 Auditoria Sequência NF"
+    )
 
     df_seq = df.copy()
 
@@ -823,18 +837,17 @@ if not df.empty:
                 quebras.append({
 
                     "Serie": serie,
-
                     "Menor NF": menor,
-
                     "Maior NF": maior,
-
                     "Qtd Quebras": len(faltantes),
 
                     "Notas Faltantes":
                         ", ".join(
-                            map(str, faltantes[:100])
+                            map(
+                                str,
+                                faltantes[:100]
+                            )
                         )
-
                 })
 
     if len(quebras) > 0:
@@ -870,56 +883,56 @@ if not df.empty:
     else:
 
         st.success(
-            "✅ Nenhuma quebra de sequência encontrada"
+            "✅ Nenhuma quebra encontrada"
         )
-
-        df_quebras = pd.DataFrame()
 
     # =========================
     # CANCELADAS
     # =========================
-    st.subheader("🚫 NF-e Canceladas")
+    st.subheader(
+        "🚫 NF-e Canceladas"
+    )
 
     df_canceladas = df[
         df["Status"] == "CANCELADA"
-    ].sort_values("NF")
+    ]
 
     if not df_canceladas.empty:
 
         st.warning(
-            f"⚠️ {len(df_canceladas)} NF-e canceladas encontradas"
+            f"⚠️ {len(df_canceladas)} NF canceladas"
         )
 
         st.dataframe(
-
-            df_canceladas[[
-
-                "NF",
-                "Serie",
-                "CPF/CNPJ",
-                "Destinatario",
-                "Valor Produto Total",
-                "Chave"
-
-            ]],
-
+            df_canceladas[
+                [
+                    "NF",
+                    "Serie",
+                    "CPF/CNPJ",
+                    "Destinatario",
+                    "Valor Produto Total",
+                    "Chave"
+                ]
+            ],
             use_container_width=True
         )
 
     else:
 
         st.success(
-            "✅ Nenhuma NF cancelada encontrada"
+            "✅ Nenhuma NF cancelada"
         )
 
     # =========================
-    # HEADER + DOWNLOAD
+    # HEADER
     # =========================
     col1, col2 = st.columns([4, 1])
 
     with col1:
 
-        st.subheader("📊 Auditoria Fiscal")
+        st.subheader(
+            "📊 Auditoria Fiscal"
+        )
 
     # =========================
     # EXPORTAÇÃO
@@ -945,14 +958,6 @@ if not df.empty:
                 sheet_name="Quebra Sequencia"
             )
 
-        if not df_canceladas.empty:
-
-            df_canceladas.to_excel(
-                writer,
-                index=False,
-                sheet_name="NF Canceladas"
-            )
-
     output.seek(0)
 
     with col2:
@@ -965,7 +970,7 @@ if not df.empty:
         )
 
     # =========================
-    # DATAFRAME
+    # TABELA
     # =========================
     st.dataframe(
         df,
@@ -974,4 +979,6 @@ if not df.empty:
 
 else:
 
-    st.info("Envie XML ou ZIP")
+    st.info(
+        "Envie XML ou ZIP"
+    )
