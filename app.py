@@ -422,42 +422,42 @@ if not df.empty:
             "✅ Nenhuma quebra de sequência encontrada"
         )
 
-# =========================
-# AUDITORIA CANCELADAS
-# =========================
-st.subheader("🚫 NF-e Canceladas")
+    # =========================
+    # AUDITORIA CANCELADAS
+    # =========================
+    st.subheader("🚫 NF-e Canceladas")
 
-df_canceladas = df[
-    df["Status"] == "CANCELADA"
-].sort_values("NF")
+    df_canceladas = df[
+        df["Status"] == "CANCELADA"
+    ].sort_values("NF")
 
-if not df_canceladas.empty:
+    if not df_canceladas.empty:
 
-    st.warning(
-        f"⚠️ {len(df_canceladas)} NF-e canceladas encontradas"
-    )
+        st.warning(
+            f"⚠️ {len(df_canceladas)} NF-e canceladas encontradas"
+        )
 
-    st.dataframe(
+        st.dataframe(
 
-        df_canceladas[[
+            df_canceladas[[
 
-            "NF",
-            "Serie",
-            "CPF/CNPJ",
-            "Destinatario",
-            "Valor Produto Total",
-            "Chave"
+                "NF",
+                "Serie",
+                "CPF/CNPJ",
+                "Destinatario",
+                "Valor Produto Total",
+                "Chave"
 
-        ]],
+            ]],
 
-        use_container_width=True
-    )
+            use_container_width=True
+        )
 
-else:
+    else:
 
-    st.success(
-        "✅ Nenhuma NF cancelada encontrada"
-    )
+        st.success(
+            "✅ Nenhuma NF cancelada encontrada"
+        )
 
     # =========================
     # HEADER TABELA + BOTÃO
@@ -486,6 +486,14 @@ else:
                 writer,
                 index=False,
                 sheet_name="Quebra Sequencia"
+            )
+
+        if not df_canceladas.empty:
+
+            df_canceladas.to_excel(
+                writer,
+                index=False,
+                sheet_name="NF Canceladas"
             )
 
     output.seek(0)
