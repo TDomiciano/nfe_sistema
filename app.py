@@ -429,38 +429,38 @@ if not df.empty:
             "✅ Nenhuma quebra de sequência encontrada"
         )
 
-    # =========================
-    # TABELA PRINCIPAL
-    # =========================
+   # =========================
+# TABELA PRINCIPAL
+# =========================
+col1, col2 = st.columns([4, 1])
+
+with col1:
     st.subheader("📊 Auditoria Fiscal")
 
-    st.dataframe(
-        df,
-        use_container_width=True
+# =========================
+# EXPORTAÇÃO
+# =========================
+output = io.BytesIO()
+
+with pd.ExcelWriter(output, engine="openpyxl") as writer:
+
+    df.to_excel(
+        writer,
+        index=False,
+        sheet_name="Auditoria Fiscal"
     )
 
-    # =========================
-    # EXPORTAÇÃO
-    # =========================
-    output = io.BytesIO()
+    if len(quebras) > 0:
 
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-
-        df.to_excel(
+        df_quebras.to_excel(
             writer,
             index=False,
-            sheet_name="Auditoria Fiscal"
+            sheet_name="Quebra Sequencia"
         )
 
-        if len(quebras) > 0:
+output.seek(0)
 
-            df_quebras.to_excel(
-                writer,
-                index=False,
-                sheet_name="Quebra Sequencia"
-            )
-
-    output.seek(0)
+with col2:
 
     st.download_button(
         "⬇️ Baixar Excel",
@@ -468,6 +468,14 @@ if not df.empty:
         file_name="auditoria_fiscal.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+# =========================
+# DATAFRAME
+# =========================
+st.dataframe(
+    df,
+    use_container_width=True
+)
 
 else:
     st.info("Envie XML ou ZIP")
