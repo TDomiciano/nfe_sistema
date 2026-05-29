@@ -34,7 +34,7 @@ with col_logo:
 
 with col_titulo:
     st.markdown("""
-    <h1 style='margin-top:20px;'>
+    <h1 style='margin-top:60px;'>
         Domiciano - Auditor Fiscal
     </h1>
     """, unsafe_allow_html=True)
