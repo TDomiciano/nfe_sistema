@@ -27,18 +27,18 @@ st.markdown("""
 # =========================
 # HEADER
 # =========================
-col_logo, col_titulo = st.columns([0.35, 6], gap="small")
+col_logo, col_titulo = st.columns([0.5, 6], gap="small")
 
 with col_logo:
-    st.image("logo.png", width=95)
+    st.image("logo.png", width=90)
 
 with col_titulo:
     st.markdown("""
     <div style="
         display:flex;
         align-items:center;
-        height:95px;
-        margin-left:-75px;
+        height:90px;
+        margin-left:-15px;
     ">
         <h1 style="
             margin:0;
