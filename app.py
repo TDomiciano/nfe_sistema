@@ -36,7 +36,7 @@ with col_logo:
     )
 
 with col_title:
-    st.title("📄 Domiciano - Auditor Fiscal")
+    st.title(" Domiciano - Auditor Fiscal")
 
 # =========================
 # SESSION STATE
