@@ -8,7 +8,10 @@ import io
 # =========================
 # CONFIG
 # =========================
-st.set_page_config(layout="wide")
+st.set_page_config(
+    layout="wide",
+    page_title="Domiciano Auditor Fiscal"
+)
 
 st.markdown("""
 <style>
@@ -21,14 +24,25 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📄 Auditor Fiscal NF-e Completo")
+# =========================
+# HEADER
+# =========================
+col_logo, col_title = st.columns([1, 6])
+
+with col_logo:
+    st.image(
+        "logo.png",
+        width=110
+    )
+
+with col_title:
+    st.title("📄 Domiciano - Auditor Fiscal")
 
 # =========================
 # SESSION STATE
 # =========================
 if "upload_key" not in st.session_state:
     st.session_state.upload_key = 0
-
 # =========================
 # BOTÃO NOVA AUDITORIA
 # =========================
