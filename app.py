@@ -38,7 +38,7 @@ with col_titulo:
         display:flex;
         align-items:center;
         height:90px;
-        margin-left:-10px;
+        margin-left:-30px;
     ">
         <h1 style="
             margin:0;
