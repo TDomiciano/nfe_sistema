@@ -27,16 +27,17 @@ st.markdown("""
 # =========================
 # HEADER
 # =========================
-col_logo, col_title = st.columns([1, 6])
+col_logo, col_titulo = st.columns([1, 6])
 
 with col_logo:
-    st.image(
-        "logo.png",
-        width=110
-    )
+    st.image("logo.png", width=120)
 
-with col_title:
-    st.title(" Domiciano - Auditor Fiscal")
+with col_titulo:
+    st.markdown("""
+    <h1 style='margin-top:20px;'>
+        Domiciano - Auditor Fiscal
+    </h1>
+    """, unsafe_allow_html=True)
 
 # =========================
 # SESSION STATE
