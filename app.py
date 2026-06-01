@@ -694,42 +694,43 @@ if arquivos:
                         "DEVERIA TER ST"
                     )
 
-# =========================
-# DIFAL
-# =========================
-if uf_origem != uf_destino:
+                # =========================
+                # DIFAL
+                # =========================
+                if uf_origem != uf_destino:
 
-    difal_calc = calcular_difal(valor_total)
+                    difal_calc = calcular_difal(
+                        valor_total
+                    )
 
-    difal_diff = round(
-        difal_xml - difal_calc,
-        2
-    )
+                    difal_diff = round(
+                        difal_xml - difal_calc,
+                        2
+                    )
 
-    status_difal = (
-        "OK"
-        if abs(difal_diff) <= 0.01
-        else "DIVERGENTE"
-    )
+                    status_difal = (
+                        "OK"
+                        if abs(difal_diff) <= 0.01
+                        else "DIVERGENTE"
+                    )
 
-    if abs(difal_diff) > 0.01:
+                    if abs(difal_diff) > 0.01:
 
-        divergencias.append(
-            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
-        )
+                        divergencias.append(
+                            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
+                        )
 
-else:
+                else:
 
-    difal_calc = 0
-    difal_diff = 0
-    status_difal = "NÃO APLICÁVEL"
+                    difal_calc = 0
+                    difal_diff = 0
+                    status_difal = "NÃO APLICÁVEL"
 
-validacao = (
-    "OK"
-    if len(divergencias) == 0
-    else "DIVERGENTE"
-)
-
+                validacao = (
+                    "OK"
+                    if len(divergencias) == 0
+                    else "DIVERGENTE"
+                )
                 # =========================
                 # DADOS
                 # =========================
