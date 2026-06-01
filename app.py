@@ -832,13 +832,13 @@ if not df.empty:
     )
 
     # =========================
-    # AUDITORIA SEQUÊNCIA
-    # =========================
-    st.subheader(
-        "🔎 Auditoria Sequência NF"
-    )
+# AUDITORIA SEQUÊNCIA
+# =========================
+st.subheader(
+    "🔎 Auditoria Sequência NF"
+)
 
-    df_seq = df[
+df_seq = df[
     df["Status"].isin(
         ["AUTORIZADA", "CANCELADA", "DENEGADA"]
     )
