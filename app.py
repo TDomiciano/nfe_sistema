@@ -809,11 +809,7 @@ if arquivos:
 
                 })
 
-            del tree
-            del root
-
-            gc.collect()
-
+            
             barra.progress(
                 (i + 1) / len(arquivos)
             )
