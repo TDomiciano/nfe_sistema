@@ -836,102 +836,107 @@ if not df.empty:
     )
 
     # =========================
-# AUDITORIA SEQUÊNCIA
-# =========================
-st.subheader(
-    "🔎 Auditoria Sequência NF"
-)
-
-df_seq = df.copy()
-
-df_seq["NF"] = pd.to_numeric(
-    df_seq["NF"],
-    errors="coerce"
-)
-
-quebras = []
-
-for serie in df_seq["Serie"].dropna().unique():
-
-    notas = sorted(
-
-        df_seq[
-            df_seq["Serie"] == serie
-        ]["NF"]
-
-        .dropna()
-        .astype(int)
-        .unique()
+    # AUDITORIA SEQUÊNCIA
+    # =========================
+    st.subheader(
+        "🔎 Auditoria Sequência NF"
     )
 
-    if len(notas) > 1:
+    # Ignora canceladas na sequência
+    df_seq = df[
+        df["Status"] != "CANCELADA"
+    ].copy()
 
-        menor = min(notas)
-        maior = max(notas)
+    df_seq["NF"] = pd.to_numeric(
+        df_seq["NF"],
+        errors="coerce"
+    )
 
-        todas = set(
-            range(menor, maior + 1)
+    quebras = []
+
+    for serie in df_seq["Serie"].dropna().unique():
+
+        notas = sorted(
+
+            df_seq[
+                df_seq["Serie"] == serie
+            ]["NF"]
+
+            .dropna()
+            .astype(int)
+            .unique()
         )
 
-        existentes = set(notas)
+        if len(notas) > 1:
 
-        faltantes = sorted(
-            list(todas - existentes)
-        )
+            menor = min(notas)
+            maior = max(notas)
 
-        if len(faltantes) > 0:
+            todas = set(
+                range(menor, maior + 1)
+            )
 
-            quebras.append({
+            existentes = set(notas)
 
-                "Serie": serie,
-                "Menor NF": menor,
-                "Maior NF": maior,
-                "Qtd Quebras": len(faltantes),
+            faltantes = sorted(
+                list(todas - existentes)
+            )
 
-                "Notas Faltantes":
-                    ", ".join(
-                        map(
-                            str,
-                            faltantes[:100]
+            if len(faltantes) > 0:
+
+                quebras.append({
+
+                    "Serie": serie,
+                    "Menor NF": menor,
+                    "Maior NF": maior,
+                    "Qtd Quebras": len(faltantes),
+
+                    "Notas Faltantes":
+                        ", ".join(
+                            map(
+                                str,
+                                faltantes[:100]
+                            )
                         )
-                    )
-            })
+                })
 
-if len(quebras) > 0:
+    if len(quebras) > 0:
 
-    df_quebras = pd.DataFrame(quebras)
+        df_quebras = pd.DataFrame(quebras)
 
-    col1, col2, col3 = st.columns(3)
+        col1, col2, col3 = st.columns(3)
 
-    col1.metric(
-        "Séries com Quebra",
-        len(df_quebras)
-    )
+        col1.metric(
+            "Séries com Quebra",
+            len(df_quebras)
+        )
 
-    col2.metric(
-        "Total Quebras",
-        sum(df_quebras["Qtd Quebras"])
-    )
+        col2.metric(
+            "Total Quebras",
+            sum(df_quebras["Qtd Quebras"])
+        )
 
-    col3.metric(
-        "Status",
-        "ALERTA"
-    )
+        col3.metric(
+            "Status",
+            "ALERTA"
+        )
 
-    st.warning(
-        "⚠️ Quebras de sequência encontradas"
-    )
+        st.warning(
+            "⚠️ Quebras de sequência encontradas"
+        )
 
-    st.dataframe(
-        df_quebras,
-        use_container_width=True
-    )
+        st.dataframe(
+            df_quebras,
+            use_container_width=True
+        )
 
-else:
+    else:
 
-    st.success(
-        "✅ Nenhuma quebra encontrada"
-    )
+        df_quebras = pd.DataFrame()
+
+        st.success(
+            "✅ Nenhuma quebra encontrada"
+        )
 
     # =========================
     # CANCELADAS
@@ -942,7 +947,7 @@ else:
 
     df_canceladas = df[
         df["Status"] == "CANCELADA"
-    ]
+    ].copy()
 
     if not df_canceladas.empty:
 
@@ -971,7 +976,7 @@ else:
         )
 
     # =========================
-    # HEADER
+    # HEADER + DOWNLOAD
     # =========================
     col1, col2 = st.columns([4, 1])
 
@@ -982,53 +987,50 @@ else:
         )
 
     # =========================
-# EXPORTAÇÃO
-# =========================
-output = io.BytesIO()
+    # EXPORTAÇÃO
+    # =========================
+    output = io.BytesIO()
 
-with pd.ExcelWriter(
-    output,
-    engine="openpyxl"
-) as writer:
-
-    # Auditoria Principal
-    df.to_excel(
-        writer,
-        index=False,
-        sheet_name="Auditoria Fiscal"
-    )
-
-    # Quebras de sequência
-    if len(quebras) > 0:
-
-        df_quebras.to_excel(
-            writer,
-            index=False,
-            sheet_name="Quebra Sequencia"
-        )
-
-    # NF Canceladas
-    if not df_canceladas.empty:
-
-        df_canceladas.to_excel(
-            writer,
-            index=False,
-            sheet_name="NF Canceladas"
-        )
-
-output.seek(0)
-
-with col2:
-
-    st.download_button(
-        "⬇️ Baixar Excel",
+    with pd.ExcelWriter(
         output,
-        file_name="auditoria_fiscal.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+        engine="openpyxl"
+    ) as writer:
+
+        df.to_excel(
+            writer,
+            index=False,
+            sheet_name="Auditoria Fiscal"
+        )
+
+        if not df_quebras.empty:
+
+            df_quebras.to_excel(
+                writer,
+                index=False,
+                sheet_name="Quebra Sequencia"
+            )
+
+        if not df_canceladas.empty:
+
+            df_canceladas.to_excel(
+                writer,
+                index=False,
+                sheet_name="NF Canceladas"
+            )
+
+    output.seek(0)
+
+    with col2:
+
+        st.download_button(
+            "⬇️ Baixar Excel",
+            output,
+            file_name="auditoria_fiscal.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     # =========================
-    # TABELA
+    # TABELA PRINCIPAL
     # =========================
     st.dataframe(
         df,
