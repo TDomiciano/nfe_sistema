@@ -832,22 +832,22 @@ if not df.empty:
     )
 
     # =========================
-# AUDITORIA SEQUÊNCIA
-# =========================
-st.subheader(
-    "🔎 Auditoria Sequência NF"
-)
-
-df_seq = df[
-    df["Status"].isin(
-        ["AUTORIZADA", "CANCELADA", "DENEGADA"]
+    # AUDITORIA SEQUÊNCIA
+    # =========================
+    st.subheader(
+        "🔎 Auditoria Sequência NF"
     )
-].copy()
 
-df_seq["NF"] = pd.to_numeric(
-    df_seq["NF"],
-    errors="coerce"
-)
+    df_seq = df[
+        df["Status"].isin(
+            ["AUTORIZADA", "CANCELADA", "DENEGADA"]
+        )
+    ].copy()
+
+    df_seq["NF"] = pd.to_numeric(
+        df_seq["NF"],
+        errors="coerce"
+    )
 
     quebras = []
 
