@@ -694,20 +694,41 @@ if arquivos:
                         "DEVERIA TER ST"
                     )
 
-                # =========================
-                # DIFAL
-                # =========================
-                if abs(difal_diff) > 0.01:
+# =========================
+# DIFAL
+# =========================
+if uf_origem != uf_destino:
 
-                    divergencias.append(
-                        f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
-                    )
+    difal_calc = calcular_difal(valor_total)
 
-                validacao = (
-                    "OK"
-                    if len(divergencias) == 0
-                    else "DIVERGENTE"
-                )
+    difal_diff = round(
+        difal_xml - difal_calc,
+        2
+    )
+
+    status_difal = (
+        "OK"
+        if abs(difal_diff) <= 0.01
+        else "DIVERGENTE"
+    )
+
+    if abs(difal_diff) > 0.01:
+
+        divergencias.append(
+            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
+        )
+
+else:
+
+    difal_calc = 0
+    difal_diff = 0
+    status_difal = "NÃO APLICÁVEL"
+
+validacao = (
+    "OK"
+    if len(divergencias) == 0
+    else "DIVERGENTE"
+)
 
                 # =========================
                 # DADOS
@@ -814,102 +835,102 @@ if not df.empty:
     )
 
     # =========================
-    # AUDITORIA SEQUÊNCIA
-    # =========================
-    st.subheader(
-        "🔎 Auditoria Sequência NF"
+# AUDITORIA SEQUÊNCIA
+# =========================
+st.subheader(
+    "🔎 Auditoria Sequência NF"
+)
+
+df_seq = df.copy()
+
+df_seq["NF"] = pd.to_numeric(
+    df_seq["NF"],
+    errors="coerce"
+)
+
+quebras = []
+
+for serie in df_seq["Serie"].dropna().unique():
+
+    notas = sorted(
+
+        df_seq[
+            df_seq["Serie"] == serie
+        ]["NF"]
+
+        .dropna()
+        .astype(int)
+        .unique()
     )
 
-    df_seq = df.copy()
+    if len(notas) > 1:
 
-    df_seq["NF"] = pd.to_numeric(
-        df_seq["NF"],
-        errors="coerce"
-    )
+        menor = min(notas)
+        maior = max(notas)
 
-    quebras = []
-
-    for serie in df_seq["Serie"].dropna().unique():
-
-        notas = sorted(
-
-            df_seq[
-                df_seq["Serie"] == serie
-            ]["NF"]
-
-            .dropna()
-            .astype(int)
-            .unique()
+        todas = set(
+            range(menor, maior + 1)
         )
 
-        if len(notas) > 1:
+        existentes = set(notas)
 
-            menor = min(notas)
-            maior = max(notas)
+        faltantes = sorted(
+            list(todas - existentes)
+        )
 
-            todas = set(
-                range(menor, maior + 1)
-            )
+        if len(faltantes) > 0:
 
-            existentes = set(notas)
+            quebras.append({
 
-            faltantes = sorted(
-                list(todas - existentes)
-            )
+                "Serie": serie,
+                "Menor NF": menor,
+                "Maior NF": maior,
+                "Qtd Quebras": len(faltantes),
 
-            if len(faltantes) > 0:
-
-                quebras.append({
-
-                    "Serie": serie,
-                    "Menor NF": menor,
-                    "Maior NF": maior,
-                    "Qtd Quebras": len(faltantes),
-
-                    "Notas Faltantes":
-                        ", ".join(
-                            map(
-                                str,
-                                faltantes[:100]
-                            )
+                "Notas Faltantes":
+                    ", ".join(
+                        map(
+                            str,
+                            faltantes[:100]
                         )
-                })
+                    )
+            })
 
-    if len(quebras) > 0:
+if len(quebras) > 0:
 
-        df_quebras = pd.DataFrame(quebras)
+    df_quebras = pd.DataFrame(quebras)
 
-        col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3)
 
-        col1.metric(
-            "Séries com Quebra",
-            len(df_quebras)
-        )
+    col1.metric(
+        "Séries com Quebra",
+        len(df_quebras)
+    )
 
-        col2.metric(
-            "Total Quebras",
-            sum(df_quebras["Qtd Quebras"])
-        )
+    col2.metric(
+        "Total Quebras",
+        sum(df_quebras["Qtd Quebras"])
+    )
 
-        col3.metric(
-            "Status",
-            "ALERTA"
-        )
+    col3.metric(
+        "Status",
+        "ALERTA"
+    )
 
-        st.warning(
-            "⚠️ Quebras de sequência encontradas"
-        )
+    st.warning(
+        "⚠️ Quebras de sequência encontradas"
+    )
 
-        st.dataframe(
-            df_quebras,
-            use_container_width=True
-        )
+    st.dataframe(
+        df_quebras,
+        use_container_width=True
+    )
 
-    else:
+else:
 
-        st.success(
-            "✅ Nenhuma quebra encontrada"
-        )
+    st.success(
+        "✅ Nenhuma quebra encontrada"
+    )
 
     # =========================
     # CANCELADAS
@@ -960,39 +981,50 @@ if not df.empty:
         )
 
     # =========================
-    # EXPORTAÇÃO
-    # =========================
-    output = io.BytesIO()
+# EXPORTAÇÃO
+# =========================
+output = io.BytesIO()
 
-    with pd.ExcelWriter(
-        output,
-        engine="openpyxl"
-    ) as writer:
+with pd.ExcelWriter(
+    output,
+    engine="openpyxl"
+) as writer:
 
-        df.to_excel(
+    # Auditoria Principal
+    df.to_excel(
+        writer,
+        index=False,
+        sheet_name="Auditoria Fiscal"
+    )
+
+    # Quebras de sequência
+    if len(quebras) > 0:
+
+        df_quebras.to_excel(
             writer,
             index=False,
-            sheet_name="Auditoria Fiscal"
+            sheet_name="Quebra Sequencia"
         )
 
-        if len(quebras) > 0:
+    # NF Canceladas
+    if not df_canceladas.empty:
 
-            df_quebras.to_excel(
-                writer,
-                index=False,
-                sheet_name="Quebra Sequencia"
-            )
-
-    output.seek(0)
-
-    with col2:
-
-        st.download_button(
-            "⬇️ Baixar Excel",
-            output,
-            file_name="auditoria_fiscal.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        df_canceladas.to_excel(
+            writer,
+            index=False,
+            sheet_name="NF Canceladas"
         )
+
+output.seek(0)
+
+with col2:
+
+    st.download_button(
+        "⬇️ Baixar Excel",
+        output,
+        file_name="auditoria_fiscal.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
     # =========================
     # TABELA
