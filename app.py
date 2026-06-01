@@ -838,15 +838,16 @@ if not df.empty:
         "🔎 Auditoria Sequência NF"
     )
 
-    # Ignora canceladas na sequência
     df_seq = df[
-        df["Status"] != "CANCELADA"
-    ].copy()
-
-    df_seq["NF"] = pd.to_numeric(
-        df_seq["NF"],
-        errors="coerce"
+    df["Status"].isin(
+        ["AUTORIZADA", "CANCELADA", "DENEGADA"]
     )
+].copy()
+
+df_seq["NF"] = pd.to_numeric(
+    df_seq["NF"],
+    errors="coerce"
+)
 
     quebras = []
 
