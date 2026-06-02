@@ -476,37 +476,17 @@ if arquivos:
                 # =========================
 # DIFAL
 # =========================
-difal_xml = float(
-    get_text(
-        icms_ufdest,
-        "nfe:vICMSUFDest",
-        ns
-    ) or 0
-)
 
-fcp_xml = float(
-    get_text(
-        icms_ufdest,
-        "nfe:vFCPUFDest",
-        ns
-    ) or 0
-)
+difal_xml = float(get_text(icms_ufdest, "nfe:vICMSUFDest", ns) or 0)
+fcp_xml = float(get_text(icms_ufdest, "nfe:vFCPUFDest", ns) or 0)
 
-vBC_destino = float(
-    get_text(icms_ufdest, "nfe:vBCUFDest", ns) or 0
-)
+vBC_destino = float(get_text(icms_ufdest, "nfe:vBCUFDest", ns) or 0)
+pICMSUFDest = float(get_text(icms_ufdest, "nfe:pICMSUFDest", ns) or 0)
+pICMSInter = float(get_text(icms_ufdest, "nfe:pICMSInter", ns) or 12)
 
-pICMSUFDest = float(
-    get_text(icms_ufdest, "nfe:pICMSUFDest", ns) or 0
-)
-
-pICMSInter = float(
-    get_text(icms_ufdest, "nfe:pICMSInter", ns) or 12
-)
-
-def calcular_difal(vBCUFDest, pICMSUFDest, pICMSInter):
-    icms_destino = vBCUFDest * (pICMSUFDest / 100)
-    icms_origem = vBCUFDest * (pICMSInter / 100)
+def calcular_difal(vBC, pDest, pInter):
+    icms_destino = vBC * (pDest / 100)
+    icms_origem = vBC * (pInter / 100)
     return round(icms_destino - icms_origem, 2)
 
 difal_calc = calcular_difal(
