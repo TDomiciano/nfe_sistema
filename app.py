@@ -710,7 +710,7 @@ if arquivos:
                     aliq_interna = 0.18
 
                     if uf_destino == "RJ":
-                        aliq_interna = 0.22
+                        aliq_interna = 0.20
 
                     difal_calc = calcular_difal(
                         valor_total,
