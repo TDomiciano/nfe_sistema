@@ -694,7 +694,7 @@ if arquivos:
                         "DEVERIA TER ST"
                     )
 
-                # =========================
+# =========================
 # DIFAL
 # =========================
 
@@ -723,13 +723,9 @@ if (
 
     if bc_difal_xml > 0:
 
-        icms_destino = (
-            bc_difal_xml * aliq_interna
-        )
+        icms_destino = bc_difal_xml * aliq_interna
 
-        icms_origem = (
-            valor_total * 0.12
-        )
+        icms_origem = valor_total * 0.12
 
         difal_calc = round(
             icms_destino - icms_origem,
