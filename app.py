@@ -1,7 +1,6 @@
 import streamlit as st
 import xml.etree.ElementTree as ET
 import pandas as pd
-import gc
 import zipfile
 import io
 
@@ -13,16 +12,10 @@ st.set_page_config(
     page_title="Domiciano Auditor Fiscal"
 )
 
-st.markdown("""
-<style>
-.block-container {
-    padding-top: 2rem;
-    padding-left: 3rem;
-    padding-right: 3rem;
-    max-width: 100%;
-}
-</style>
-""", unsafe_allow_html=True)
+# =========================
+# UI
+# =========================
+st.title("Domiciano - Auditor Fiscal")
 
 # =========================
 # REGRAS
@@ -35,38 +28,30 @@ def carregar_regras():
 
 regras, regras_st = carregar_regras()
 
-# =========================
-# PRÉ-OTIMIZAÇÃO (MUITO IMPORTANTE)
-# =========================
-regras["ncm_str"] = regras["ncm"].astype(str).str.replace(".0", "", regex=False).str.strip()
+# normaliza (performance)
+regras["ncm_str"] = regras["ncm"].astype(str).str.replace(".0","",regex=False).str.strip()
 regras["origem_str"] = regras["origem"].astype(str).str.upper().str.strip()
 regras["destino_str"] = regras["destino"].astype(str).str.upper().str.strip()
 
-regras_st["ncm_str"] = regras_st["ncm"].astype(str).str.replace(".0", "", regex=False).str.strip()
-regras_st["origem_str"] = regras_st["origem"].astype(str).str.upper().str.strip()
-regras_st["destino_str"] = regras_st["destino"].astype(str).str.upper().str.strip()
-
 # =========================
-# XML SAFE
+# HELPERS
 # =========================
-def get_text(element, tag, ns):
-    if element is None:
+def get_text(el, tag, ns):
+    if el is None:
         return ""
-    found = element.find(tag, ns)
+    found = el.find(tag, ns)
     return found.text if found is not None else ""
 
-# =========================
-# DIFAL (SUA LÓGICA MANTIDA)
-# =========================
 def calcular_difal(valor, aliq_inter=0.12, aliq_interna=0.18):
     icms_origem = valor * aliq_inter
     base1 = valor - icms_origem
     base2 = base1 / (1 - aliq_interna)
     icms_interno = base2 * aliq_interna
     return round(icms_interno - icms_origem, 2)
-dados = []
-chaves_canceladas = set()
 
+# =========================
+# UPLOAD
+# =========================
 uploads = st.file_uploader(
     "Envie XML ou ZIP",
     type=["xml", "zip"],
@@ -84,16 +69,17 @@ if uploads:
             with zipfile.ZipFile(upload, "r") as z:
                 for nome in z.namelist():
                     if nome.endswith(".xml"):
-                        xml_file = io.BytesIO(z.read(nome))
-                        xml_file.name = nome
-                        arquivos.append(xml_file)
+                        f = io.BytesIO(z.read(nome))
+                        f.name = nome
+                        arquivos.append(f)
 
 # =========================
 # PROCESSAMENTO
 # =========================
-if arquivos:
+dados = []
+ns = {"nfe": "http://www.portalfiscal.inf.br/nfe"}
 
-    ns = {"nfe": "http://www.portalfiscal.inf.br/nfe"}
+if arquivos:
 
     barra = st.progress(0)
 
@@ -116,22 +102,15 @@ if arquivos:
             cnpj = get_text(dest, "nfe:CNPJ", ns)
             cpf = get_text(dest, "nfe:CPF", ns)
             documento = cnpj if cnpj else cpf
-
             tipo_cliente = "PJ" if cnpj else "PF"
 
-            ie_dest = ""
-            if dest is not None:
-                ie_tag = dest.find(".//nfe:IE", ns)
-                ie_dest = ie_tag.text if ie_tag is not None else ""
+            ie_tag = dest.find(".//nfe:IE", ns) if dest else None
+            ie_dest = ie_tag.text if ie_tag is not None else ""
 
-            chave = ""
             inf_nfe = root.find(".//nfe:infNFe", ns)
-            if inf_nfe is not None:
-                chave = inf_nfe.attrib.get("Id", "").replace("NFe", "")
+            chave = inf_nfe.attrib.get("Id","").replace("NFe","") if inf_nfe is not None else ""
 
             status = "AUTORIZADA"
-            if chave in chaves_canceladas:
-                status = "CANCELADA"
 
             itens = root.findall(".//nfe:det", ns)
 
@@ -162,7 +141,7 @@ if arquivos:
                 valor_total = valor_prod - valor_desc
 
                 # =========================
-                # DIFAL (OTIMIZADO)
+                # DIFAL
                 # =========================
                 difal_xml = float(get_text(icms_ufdest, "nfe:vICMSUFDest", ns) or 0)
 
@@ -170,14 +149,10 @@ if arquivos:
 
                 difal_diff = round(difal_xml - difal_calc, 2)
 
-                status_difal = (
-                    "OK"
-                    if abs(difal_diff) <= 0.01
-                    else "DIVERGENTE"
-                )
+                status_difal = "OK" if abs(difal_diff) <= 0.01 else "DIVERGENTE"
 
                 # =========================
-                # REGRA FISCAL (RÁPIDO)
+                # REGRA FISCAL
                 # =========================
                 filtro = regras[
                     (regras["ncm_str"] == str(ncm).replace(".0","").strip()) &
@@ -207,15 +182,26 @@ if arquivos:
                     "Qtd": qtd,
                     "NCM": ncm,
                     "CFOP": cfop_xml,
-                    "Valor Produto Total": valor_total,
+                    "Valor Total": valor_total,
                     "DIFAL XML": difal_xml,
-                    "DIFAL Calculado": difal_calc,
-                    "Diferença DIFAL": difal_diff,
+                    "DIFAL Calc": difal_calc,
+                    "Diferença": difal_diff,
                     "Status DIFAL": status_difal,
                     "Divergências": " | ".join(divergencias)
                 })
 
-            barra.progress((i + 1) / len(arquivos))
+            barra.progress((i+1)/len(arquivos))
 
         except Exception as e:
             st.error(f"Erro XML {arq.name}: {e}")
+
+# =========================
+# OUTPUT
+# =========================
+df = pd.DataFrame(dados)
+
+if not df.empty:
+    st.success(f"{len(df)} registros processados")
+    st.dataframe(df, use_container_width=True)
+else:
+    st.info("Envie XML ou ZIP")
