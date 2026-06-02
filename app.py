@@ -238,13 +238,12 @@ if arquivos:
         except:
             pass
 
-    # =========================
-# LOOP XMLS
+# =========================
+# LOOP XMLS (CORRIGIDO SEM MUDAR SUA LÓGICA)
 # =========================
 for i, arq in enumerate(arquivos):
 
     try:
-
         arq.seek(0)
         tree = ET.parse(arq)
         root = tree.getroot()
@@ -294,9 +293,6 @@ for i, arq in enumerate(arquivos):
         elif "REJEICAO" in xml_str:
             status = "REJEITADA"
 
-        # =========================
-        # ITENS
-        # =========================
         itens = root.findall(".//nfe:det", ns)
 
         for item in itens:
@@ -333,10 +329,11 @@ for i, arq in enumerate(arquivos):
 
             valor_prod = float(get_text(prod, "nfe:vProd", ns) or 0)
             valor_desc = float(get_text(prod, "nfe:vDesc", ns) or 0)
+
             valor_total = valor_prod - valor_desc
 
             # =========================
-            # DIFAL (CORRIGIDO)
+            # DIFAL (SEU MODELO ORIGINAL MANTIDO)
             # =========================
             difal_xml = float(get_text(icms_ufdest, "nfe:vICMSUFDest", ns) or 0)
             fcp_xml = float(get_text(icms_ufdest, "nfe:vFCPUFDest", ns) or 0)
@@ -363,7 +360,7 @@ for i, arq in enumerate(arquivos):
             # REGRA FISCAL
             # =========================
             filtro = regras[
-                (regras["ncm"].astype(str).str.replace(".0", "", regex=False).str.strip() == str(ncm).replace(".0", "").strip())
+                (regras["ncm"].astype(str).str.replace(".0","",regex=False).str.strip() == str(ncm).replace(".0","").strip())
                 &
                 (regras["origem"].astype(str).str.upper().str.strip() == uf_origem.upper().strip())
                 &
@@ -372,11 +369,8 @@ for i, arq in enumerate(arquivos):
 
             regra = filtro.iloc[0] if not filtro.empty else None
 
-            # =========================
-            # REGRA ST
-            # =========================
             filtro_st = regras_st[
-                (regras_st["ncm"].astype(str).str.replace(".0", "", regex=False).str.strip() == str(ncm).replace(".0", "").strip())
+                (regras_st["ncm"].astype(str).str.replace(".0","",regex=False).str.strip() == str(ncm).replace(".0","").strip())
                 &
                 (regras_st["origem"].astype(str).str.upper().str.strip() == uf_origem.upper().strip())
                 &
@@ -387,17 +381,11 @@ for i, arq in enumerate(arquivos):
 
             divergencias = []
 
-            # =========================
             # CFOP / ICMS
-            # =========================
             if regra is not None:
 
-                cfop_regra = (
-                    str(regra["cfop_pj"]) if tipo_cliente == "PJ"
-                    else str(regra["cfop_pf"])
-                ).replace(".0", "").strip()
-
-                aliquota_regra = str(regra["aliquota_icms"]).replace(".0", "").strip()
+                cfop_regra = (str(regra["cfop_pj"]) if tipo_cliente == "PJ" else str(regra["cfop_pf"])).replace(".0","").strip()
+                aliquota_regra = str(regra["aliquota_icms"]).replace(".0","").strip()
 
                 if cfop_xml != cfop_regra:
                     divergencias.append(f"CFOP XML ({cfop_xml}) diferente da regra ({cfop_regra})")
@@ -411,10 +399,8 @@ for i, arq in enumerate(arquivos):
             else:
                 divergencias.append("SEM REGRA FISCAL")
 
-            # =========================
             # ST
-            # =========================
-            csts_st = ["10", "30", "60", "70"]
+            csts_st = ["10","30","60","70"]
             tem_st = cst_xml in csts_st
 
             if regra_st is None and tem_st:
@@ -426,7 +412,7 @@ for i, arq in enumerate(arquivos):
             validacao = "OK" if len(divergencias) == 0 else "DIVERGENTE"
 
             # =========================
-            # OUTPUT
+            # OUTPUT FINAL
             # =========================
             dados.append({
 
@@ -454,7 +440,7 @@ for i, arq in enumerate(arquivos):
 
                 "Aliquota ICMS": aliquota_xml,
 
-                "Valor Produto Total": round(valor_total, 2),
+                "Valor Produto Total": round(valor_total,2),
 
                 "DIFAL XML": difal_xml,
                 "DIFAL Calculado": difal_calc,
@@ -463,7 +449,7 @@ for i, arq in enumerate(arquivos):
 
                 "FCP XML": fcp_xml,
 
-                "Tem Regra ST": "SIM" if regra_st is not None else "NAO",
+                "Tem Regra ST": "SIM" if regra_st else "NAO",
                 "Validação Fiscal": validacao,
                 "Divergências": " | ".join(divergencias)
             })
