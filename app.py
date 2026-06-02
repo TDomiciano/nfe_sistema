@@ -699,8 +699,15 @@ if arquivos:
                 # =========================
                 if uf_origem != uf_destino:
 
+                    aliq_interna = 0.18
+
+                    if uf_destino == "RJ":
+                        aliq_interna = 0.22
+
                     difal_calc = calcular_difal(
-                        valor_total
+                        valor_total,
+                        aliq_inter=0.12,
+                        aliq_interna=aliq_interna
                     )
 
                     difal_diff = round(
