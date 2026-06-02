@@ -474,38 +474,54 @@ if arquivos:
                 )
 
                 # =========================
-                # DIFAL
-                # =========================
-                difal_xml = float(
-                    get_text(
-                        icms_ufdest,
-                        "nfe:vICMSUFDest",
-                        ns
-                    ) or 0
-                )
+# DIFAL
+# =========================
+difal_xml = float(
+    get_text(
+        icms_ufdest,
+        "nfe:vICMSUFDest",
+        ns
+    ) or 0
+)
 
-                fcp_xml = float(
-                    get_text(
-                        icms_ufdest,
-                        "nfe:vFCPUFDest",
-                        ns
-                    ) or 0
-                )
+fcp_xml = float(
+    get_text(
+        icms_ufdest,
+        "nfe:vFCPUFDest",
+        ns
+    ) or 0
+)
 
-                difal_calc = calcular_difal(
-                    valor_total
-                )
+vBC_destino = float(
+    get_text(icms_ufdest, "nfe:vBCUFDest", ns) or 0
+)
 
-                difal_diff = round(
-                    difal_xml - difal_calc,
-                    2
-                )
+pICMSUFDest = float(
+    get_text(icms_ufdest, "nfe:pICMSUFDest", ns) or 0
+)
 
-                status_difal = (
-                    "OK"
-                    if abs(difal_diff) <= 0.01
-                    else "DIVERGENTE"
-                )
+pICMSInter = float(
+    get_text(icms_ufdest, "nfe:pICMSInter", ns) or 12
+)
+
+def calcular_difal(vBCUFDest, pICMSUFDest, pICMSInter):
+    icms_destino = vBCUFDest * (pICMSUFDest / 100)
+    icms_origem = vBCUFDest * (pICMSInter / 100)
+    return round(icms_destino - icms_origem, 2)
+
+difal_calc = calcular_difal(
+    vBC_destino,
+    pICMSUFDest,
+    pICMSInter
+)
+
+difal_diff = round(difal_xml - difal_calc, 2)
+
+status_difal = (
+    "OK"
+    if abs(difal_diff) <= 0.01
+    else "DIVERGENTE"
+)
 
                 # =========================
                 # REGRA FISCAL
