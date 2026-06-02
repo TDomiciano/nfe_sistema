@@ -697,14 +697,22 @@ if arquivos:
                 # =========================
                 # DIFAL
                 # =========================
-                if uf_origem != uf_destino:
+                pj_com_ie = (
+                    tipo_cliente == "PJ"
+                    and ie_dest.strip() != ""
+                )
+
+                if (
+                    uf_origem != uf_destino
+                    and not pj_com_ie
+                ):
 
                     aliq_interna = 0.18
 
                     if uf_destino == "RJ":
                         aliq_interna = 0.22
 
-                    difal_calc = calcular_difal(
+                    difal_calc = calcularif uf_origem != uf_destino_difal(
                         valor_total,
                         aliq_inter=0.12,
                         aliq_interna=aliq_interna
