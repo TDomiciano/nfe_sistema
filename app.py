@@ -487,40 +487,30 @@ if arquivos:
                 )
 
                 # =========================
-                # DIFAL
-                # =========================
-                difal_xml = float(
-                    get_text(
-                        icms_ufdest,
-                        "nfe:vICMSUFDest",
-                        ns
-                    ) or 0
-                )
+# DIFAL
+# =========================
 
-                fcp_xml = float(
-                    get_text(
-                        icms_ufdest,
-                        "nfe:vFCPUFDest",
-                        ns
-                    ) or 0
-                )
+difal_xml = float(get_text(icms_ufdest, "nfe:vICMSUFDest", ns) or 0)
 
-                difal_calc = calcular_difal(
-                    valor=base,
-                    aliq_inter=pICMSInter,
-                    aliq_interna=pICMSUFDest
-                )
+fcp_xml = float(get_text(icms_ufdest, "nfe:vFCPUFDest", ns) or 0)
 
-                difal_diff = round(
-                    difal_xml - difal_calc,
-                    2
-                )
+vBC_destino = float(get_text(icms_ufdest, "nfe:vBCUFDest", ns) or 0)
 
-                status_difal = (
-                    "OK"
-                    if abs(difal_diff) <= 0.01
-                    else "DIVERGENTE"
-                )
+base = vBC_destino if vBC_destino > 0 else valor_total
+
+difal_calc = calcular_difal(
+    valor=base,
+    aliq_inter=pICMSInter,
+    aliq_interna=pICMSUFDest
+)
+
+difal_diff = round(difal_xml - difal_calc, 2)
+
+status_difal = (
+    "OK"
+    if abs(difal_diff) <= 0.01
+    else "DIVERGENTE"
+)
 
                 # =========================
                 # REGRA FISCAL
