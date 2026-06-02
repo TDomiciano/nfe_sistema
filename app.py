@@ -671,93 +671,68 @@ validacao = (
     else "DIVERGENTE"
 )
                 # =========================
-                # DADOS
-                # =========================
-                dados.append({
+# DADOS
+# =========================
 
-                    "NF": get_text(
-                        ide,
-                        "nfe:nNF",
-                        ns
-                    ),
+dados.append({
 
-                    "Serie": get_text(
-                        ide,
-                        "nfe:serie",
-                        ns
-                    ),
+    "NF": get_text(ide, "nfe:nNF", ns),
+    "Serie": get_text(ide, "nfe:serie", ns),
 
-                    "Status": status,
+    "Status": status,
+    "Chave": chave,
 
-                    "Chave": chave,
+    "CPF/CNPJ": documento,
+    "IE": ie_dest,
 
-                    "CPF/CNPJ": documento,
+    "Destinatario": get_text(dest, "nfe:xNome", ns),
 
-                    "IE": ie_dest,
+    "UF Origem": uf_origem,
+    "UF Destino": uf_destino,
 
-                    "Destinatario": get_text(
-                        dest,
-                        "nfe:xNome",
-                        ns
-                    ),
+    "Produto": produto,
+    "Codigo": codigo,
+    "Qtd": qtd,
 
-                    "UF Origem": uf_origem,
+    "NCM": ncm,
+    "CFOP": cfop_xml,
+    "CST": cst_xml,
+    "Aliquota ICMS": aliquota_xml,
 
-                    "UF Destino": uf_destino,
+    "Valor Produto Total": round(valor_total, 2),
 
-                    "Produto": produto,
+    # =========================
+    # DIFAL
+    # =========================
+    "DIFAL XML": difal_xml,
+    "DIFAL Calculado": difal_calc,
+    "Diferença DIFAL": difal_diff,
+    "Status DIFAL": status_difal,
 
-                    "Codigo": codigo,
+    # =========================
+    # FCP
+    # =========================
+    "FCP XML": fcp_xml,
 
-                    "Qtd": qtd,
+    # =========================
+    # REGRA ST
+    # =========================
+    "Tem Regra ST": "SIM" if regra_st is not None else "NAO",
 
-                    "NCM": ncm,
+    # =========================
+    # AUDITORIA
+    # =========================
+    "Validação Fiscal": validacao,
 
-                    "CFOP": cfop_xml,
+    "Divergências": " | ".join(divergencias) if divergencias else ""
+})
 
-                    "CST": cst_xml,
 
-                    "Aliquota ICMS": aliquota_xml,
+# =========================
+# PROGRESSO
+# =========================
+barra.progress((i + 1) / len(arquivos))
 
-                    "Valor Produto Total": round(
-                        valor_total,
-                        2
-                    ),
-
-                    "DIFAL XML": difal_xml,
-
-                    "DIFAL Calculado": difal_calc,
-
-                    "Diferença DIFAL": difal_diff,
-
-                    "Status DIFAL": status_difal,
-
-                    "FCP XML": fcp_xml,
-
-                    "Tem Regra ST": (
-                        "SIM"
-                        if regra_st is not None
-                        else "NAO"
-                    ),
-
-                    "Validação Fiscal": validacao,
-
-                    "Divergências": (
-                        " | ".join(divergencias)
-                    )
-
-                })
-
-            
-            barra.progress(
-                (i + 1) / len(arquivos)
-            )
-
-        except Exception as e:
-
-            st.error(
-                f"Erro XML {arq.name}: {e}"
-            )
 
 # =========================
 # OUTPUT
@@ -765,10 +740,7 @@ validacao = (
 df = pd.DataFrame(dados)
 
 if not df.empty:
-
-    st.success(
-        f"✅ {len(df)} registros"
-    )
+    st.success(f"✅ {len(df)} registros")
 
     # =========================
     # AUDITORIA SEQUÊNCIA
