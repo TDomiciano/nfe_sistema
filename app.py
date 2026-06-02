@@ -470,8 +470,8 @@ if arquivos:
                 )
 
                 valor_total = (
-                    valor_prod - valor_desc
-                )
+    valor_prod - valor_desc
+)
 
 # =========================
 # DIFAL
@@ -502,7 +502,6 @@ status_difal = (
     if abs(difal_diff) <= 0.01
     else "DIVERGENTE"
 )
-
 
                 # =========================
                 # REGRA FISCAL
