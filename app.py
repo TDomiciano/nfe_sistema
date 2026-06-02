@@ -695,57 +695,83 @@ if arquivos:
                     )
 
                 # =========================
-                # DIFAL
-                # =========================
-                pj_com_ie = (
-                    tipo_cliente == "PJ"
-                    and ie_dest.strip() != ""
-                )
+# DIFAL
+# =========================
 
-                if (
-                    uf_origem != uf_destino
-                    and not pj_com_ie
-                ):
+pj_com_ie = (
+    tipo_cliente == "PJ"
+    and ie_dest.strip() != ""
+)
 
-                    aliq_interna = 0.18
+if (
+    uf_origem != uf_destino
+    and not pj_com_ie
+):
 
-                    if uf_destino == "RJ":
-                        aliq_interna = 0.20
+    aliq_interna = 0.18
 
-                    difal_calc = calcular_difal(
-                        valor_total,
-                        aliq_inter=0.12,
-                        aliq_interna=aliq_interna
-                    )
+    if uf_destino == "RJ":
+        aliq_interna = 0.20
 
-                    difal_diff = round(
-                        difal_xml - difal_calc,
-                        2
-                    )
+    bc_difal_xml = float(
+        get_text(
+            icms_ufdest,
+            "nfe:vBCUFDest",
+            ns
+        ) or 0
+    )
 
-                    status_difal = (
-                        "OK"
-                        if abs(difal_diff) <= 0.01
-                        else "DIVERGENTE"
-                    )
+    if bc_difal_xml > 0:
 
-                    if abs(difal_diff) > 0.01:
+        icms_destino = (
+            bc_difal_xml * aliq_interna
+        )
 
-                        divergencias.append(
-                            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
-                        )
+        icms_origem = (
+            valor_total * 0.12
+        )
 
-                else:
+        difal_calc = round(
+            icms_destino - icms_origem,
+            2
+        )
 
-                    difal_calc = 0
-                    difal_diff = 0
-                    status_difal = "NÃO APLICÁVEL"
+    else:
 
-                validacao = (
-                    "OK"
-                    if len(divergencias) == 0
-                    else "DIVERGENTE"
-                )
+        difal_calc = calcular_difal(
+            valor_total,
+            aliq_inter=0.12,
+            aliq_interna=aliq_interna
+        )
+
+    difal_diff = round(
+        difal_xml - difal_calc,
+        2
+    )
+
+    status_difal = (
+        "OK"
+        if abs(difal_diff) <= 0.01
+        else "DIVERGENTE"
+    )
+
+    if abs(difal_diff) > 0.01:
+
+        divergencias.append(
+            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
+        )
+
+else:
+
+    difal_calc = 0
+    difal_diff = 0
+    status_difal = "NÃO APLICÁVEL"
+
+validacao = (
+    "OK"
+    if len(divergencias) == 0
+    else "DIVERGENTE"
+)
                 # =========================
                 # DADOS
                 # =========================
