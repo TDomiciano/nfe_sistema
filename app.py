@@ -506,7 +506,9 @@ if arquivos:
                 )
 
                 difal_calc = calcular_difal(
-                    valor_total
+                    valor=base,
+                    aliq_inter=pICMSInter,
+                    aliq_interna=pICMSUFDest
                 )
 
                 difal_diff = round(
