@@ -105,24 +105,11 @@ def get_text(element, tag, ns):
 # =========================
 # DIFAL BASE DUPLA
 # =========================
-def calcular_difal(
-    valor,
-    aliq_inter=0.12,
-    aliq_interna=0.18
-):
+def calcular_difal(vBCUFDest, pICMSUFDest, vBC, pICMSInter):
+    icms_destino = vBCUFDest * (pICMSUFDest / 100)
+    icms_origem = vBC * (pICMSInter / 100)
 
-    icms_origem = valor * aliq_inter
-
-    base1 = valor - icms_origem
-
-    base2 = base1 / (1 - aliq_interna)
-
-    icms_interno = base2 * aliq_interna
-
-    return round(
-        icms_interno - icms_origem,
-        2
-    )
+    return round(icms_destino - icms_origem, 2)
 
 # =========================
 # UPLOAD
