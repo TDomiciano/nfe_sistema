@@ -105,7 +105,7 @@ def get_text(element, tag, ns):
 # =========================
 # DIFAL BASE DUPLA
 # =========================
-def calcular_difal(
+def calcular_difal_base_dupla(
     valor,
     aliq_inter=0.12,
     aliq_interna=0.18
@@ -113,14 +113,16 @@ def calcular_difal(
 
     icms_origem = valor * aliq_inter
 
-    base1 = valor - icms_origem
+    base_dupla = (
+        valor - icms_origem
+    ) / (1 - aliq_interna)
 
-    base2 = base1 / (1 - aliq_interna)
-
-    icms_interno = base2 * aliq_interna
+    icms_destino = (
+        base_dupla * aliq_interna
+    )
 
     return round(
-        icms_interno - icms_origem,
+        icms_destino - icms_origem,
         2
     )
 
