@@ -177,36 +177,79 @@ dados = []
 # =========================
 chaves_canceladas = set()
 
-for i, arq in enumerate(arquivos):
+# =========================
+# PROCESSAMENTO
+# =========================
+if arquivos:
 
-    try:
-        arq.seek(0)
-        tree = ET.parse(arq)
-        root = tree.getroot()
+    st.write(f"📦 Total XMLs: {len(arquivos)}")
 
-        xml_str = ET.tostring(root, encoding="unicode").upper()
+    barra = st.progress(0)
 
-        # só eventos de cancelamento
-        if "110111" not in xml_str:
-            continue
+    ns = {
+        "nfe": "http://www.portalfiscal.inf.br/nfe"
+    }
 
-        chave_evento = ""
+    # =========================
+    # BUSCA CANCELADAS
+    # =========================
+    for i, arq in enumerate(arquivos):
 
-        inf_evento = root.find(".//nfe:infEvento", ns)
+        try:
 
-        if inf_evento is not None:
-            chave_evento = get_text(inf_evento, "nfe:chNFe", ns)
+            arq.seek(0)
 
-        if not chave_evento:
-            ret_evento = root.find(".//nfe:retEvento/nfe:infEvento", ns)
-            if ret_evento is not None:
-                chave_evento = get_text(ret_evento, "nfe:chNFe", ns)
+            tree = ET.parse(arq)
 
-        if chave_evento:
-            chaves_canceladas.add(chave_evento.strip())
+            root = tree.getroot()
 
-    except:
-        pass
+            xml_str = ET.tostring(
+                root,
+                encoding="unicode"
+            ).upper()
+
+            if (
+                "CANCELAMENTO" in xml_str
+                and
+                "110111" in xml_str
+            ):
+
+                chave_evento = ""
+
+                ret_evento = root.find(
+                    ".//nfe:retEvento/nfe:infEvento",
+                    ns
+                )
+
+                if ret_evento is not None:
+
+                    chave_evento = get_text(
+                        ret_evento,
+                        "nfe:chNFe",
+                        ns
+                    )
+
+                if chave_evento == "":
+
+                    inf_evento = root.find(
+                        ".//nfe:infEvento",
+                        ns
+                    )
+
+                    chave_evento = get_text(
+                        inf_evento,
+                        "nfe:chNFe",
+                        ns
+                    )
+
+                if chave_evento != "":
+
+                    chaves_canceladas.add(
+                        chave_evento
+                    )
+
+        except:
+            pass
 
     # =========================
     # LOOP XMLS
@@ -443,39 +486,39 @@ for i, arq in enumerate(arquivos):
                     valor_prod - valor_desc
                 )
 
-# =========================
-# DIFAL
-# =========================
+                # =========================
+                # DIFAL
+                # =========================
+                difal_xml = float(
+                    get_text(
+                        icms_ufdest,
+                        "nfe:vICMSUFDest",
+                        ns
+                    ) or 0
+                )
 
-difal_xml = float(
-    get_text(icms_ufdest, "nfe:vICMSUFDest", ns) or 0
-)
+                fcp_xml = float(
+                    get_text(
+                        icms_ufdest,
+                        "nfe:vFCPUFDest",
+                        ns
+                    ) or 0
+                )
 
-fcp_xml = float(
-    get_text(icms_ufdest, "nfe:vFCPUFDest", ns) or 0
-)
+                difal_calc = calcular_difal(
+                    valor_total
+                )
 
-# alíquota interna padrão
-aliq_interna = 0.18
-if uf_destino == "RJ":
-    aliq_interna = 0.20
+                difal_diff = round(
+                    difal_xml - difal_calc,
+                    2
+                )
 
-# alíquota interestadual (fixa padrão BR)
-aliq_inter = 0.12
-
-difal_calc = calcular_difal(
-    base,
-    aliq_inter,
-    aliq_interna
-)
-
-difal_diff = round(difal_xml - difal_calc, 2)
-
-status_difal = (
-    "OK"
-    if abs(difal_diff) <= 0.01
-    else "DIVERGENTE"
-)
+                status_difal = (
+                    "OK"
+                    if abs(difal_diff) <= 0.01
+                    else "DIVERGENTE"
+                )
 
                 # =========================
                 # REGRA FISCAL
@@ -569,170 +612,228 @@ status_difal = (
 
                 divergencias = []
 
-# =========================
-# CFOP + ICMS
-# =========================
-divergencias = []
-
-if regra is not None:
-
-    cfop_regra = (
-        str(regra["cfop_pj"])
-        if tipo_cliente == "PJ"
-        else str(regra["cfop_pf"])
-    ).replace(".0", "").strip()
-
-    aliquota_regra = str(
-        regra["aliquota_icms"]
-    ).replace(".0", "").strip()
-
-    # CFOP
-    if str(cfop_xml).strip() != cfop_regra:
-        divergencias.append(
-            f"CFOP XML ({cfop_xml}) diferente da regra ({cfop_regra})"
-        )
-
-    # ICMS (comparação segura)
-    try:
-        if aliquota_xml not in ["", None]:
-            if float(aliquota_xml) != float(aliquota_regra):
-                divergencias.append(
-                    f"ICMS XML ({aliquota_xml}) diferente da regra ({aliquota_regra})"
-                )
-    except:
-        pass
-
-else:
-    divergencias.append("SEM REGRA FISCAL")
-
-
-# =========================
-# ST
-# =========================
-csts_st = {"10", "30", "60", "70"}
-
-tem_st = str(cst_xml).strip() in csts_st
-
-if regra_st is None and tem_st:
-    divergencias.append("ST SEM REGRA")
-
-elif regra_st is not None and not tem_st:
-    divergencias.append("DEVERIA TER ST")
-
-# =========================
-# DIFAL
-# =========================
-
-pj_com_ie = (
-    tipo_cliente == "PJ"
-    and ie_dest.strip() != ""
-)
-
-difal_calc = 0
-difal_diff = 0
-status_difal = "NÃO APLICÁVEL"
-
-# só aplica DIFAL se for interestadual e NÃO for PJ com IE
-if uf_origem != uf_destino and not pj_com_ie:
-
-    aliq_interna = 0.18
-    if uf_destino == "RJ":
-        aliq_interna = 0.20
-
-    # garante base consistente
-    base_difal = valor_total
-
-    difal_calc = calcular_difal(
-        base_difal,
-        aliq_inter=0.12,
-        aliq_interna=aliq_interna
-    )
-
-    difal_diff = round(difal_xml - difal_calc, 2)
-
-    status_difal = (
-        "OK"
-        if abs(difal_diff) <= 0.01
-        else "DIVERGENTE"
-    )
-
-    if abs(difal_diff) > 0.01:
-        divergencias.append(
-            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
-        )
-
-# =========================
-# VALIDACAO FINAL
-# =========================
-
-validacao = (
-    "OK"
-    if len(divergencias) == 0
-    else "DIVERGENTE"
-)
                 # =========================
-# DADOS
-# =========================
+                # CFOP + ICMS
+                # =========================
+                if regra is not None:
 
-dados.append({
+                    cfop_regra = (
 
-    "NF": get_text(ide, "nfe:nNF", ns),
-    "Serie": get_text(ide, "nfe:serie", ns),
+                        str(regra["cfop_pj"])
 
-    "Status": status,
-    "Chave": chave,
+                        if tipo_cliente == "PJ"
 
-    "CPF/CNPJ": documento,
-    "IE": ie_dest,
+                        else
 
-    "Destinatario": get_text(dest, "nfe:xNome", ns),
+                        str(regra["cfop_pf"])
 
-    "UF Origem": uf_origem,
-    "UF Destino": uf_destino,
+                    ).replace(".0", "").strip()
 
-    "Produto": produto,
-    "Codigo": codigo,
-    "Qtd": qtd,
+                    aliquota_regra = str(
+                        regra["aliquota_icms"]
+                    ).replace(".0", "").strip()
 
-    "NCM": ncm,
-    "CFOP": cfop_xml,
-    "CST": cst_xml,
-    "Aliquota ICMS": aliquota_xml,
+                    if cfop_xml != cfop_regra:
 
-    "Valor Produto Total": round(valor_total, 2),
+                        divergencias.append(
+                            f"CFOP XML ({cfop_xml}) diferente da regra ({cfop_regra})"
+                        )
 
-    # =========================
-    # DIFAL
-    # =========================
-    "DIFAL XML": difal_xml,
-    "DIFAL Calculado": difal_calc,
-    "Diferença DIFAL": difal_diff,
-    "Status DIFAL": status_difal,
+                    try:
 
-    # =========================
-    # FCP
-    # =========================
-    "FCP XML": fcp_xml,
+                        if (
+                            aliquota_xml != ""
+                            and
+                            float(aliquota_xml) != float(aliquota_regra)
+                        ):
 
-    # =========================
-    # REGRA ST
-    # =========================
-    "Tem Regra ST": "SIM" if regra_st is not None else "NAO",
+                            divergencias.append(
+                                f"ICMS XML ({aliquota_xml}) diferente da regra ({aliquota_regra})"
+                            )
 
-    # =========================
-    # AUDITORIA
-    # =========================
-    "Validação Fiscal": validacao,
+                    except:
+                        pass
 
-    "Divergências": " | ".join(divergencias) if divergencias else ""
-})
+                else:
 
+                    divergencias.append(
+                        "SEM REGRA FISCAL"
+                    )
 
-# =========================
-# PROGRESSO
-# =========================
-barra.progress((i + 1) / len(arquivos))
+                # =========================
+                # ST
+                # =========================
+                csts_st = [
+                    "10",
+                    "30",
+                    "60",
+                    "70"
+                ]
 
+                tem_st = (
+                    cst_xml in csts_st
+                )
+
+                if (
+                    regra_st is None
+                    and
+                    tem_st
+                ):
+
+                    divergencias.append(
+                        "ST SEM REGRA"
+                    )
+
+                if (
+                    regra_st is not None
+                    and
+                    not tem_st
+                ):
+
+                    divergencias.append(
+                        "DEVERIA TER ST"
+                    )
+
+                # =========================
+                # DIFAL
+                # =========================
+                pj_com_ie = (
+                    tipo_cliente == "PJ"
+                    and ie_dest.strip() != ""
+                )
+
+                if (
+                    uf_origem != uf_destino
+                    and not pj_com_ie
+                ):
+
+                    aliq_interna = 0.18
+
+                    if uf_destino == "RJ":
+                        aliq_interna = 0.20
+
+                    difal_calc = calcular_difal(
+                        valor_total,
+                        aliq_inter=0.12,
+                        aliq_interna=aliq_interna
+                    )
+
+                    difal_diff = round(
+                        difal_xml - difal_calc,
+                        2
+                    )
+
+                    status_difal = (
+                        "OK"
+                        if abs(difal_diff) <= 0.01
+                        else "DIVERGENTE"
+                    )
+
+                    if abs(difal_diff) > 0.01:
+
+                        divergencias.append(
+                            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
+                        )
+
+                else:
+
+                    difal_calc = 0
+                    difal_diff = 0
+                    status_difal = "NÃO APLICÁVEL"
+
+                validacao = (
+                    "OK"
+                    if len(divergencias) == 0
+                    else "DIVERGENTE"
+                )
+                # =========================
+                # DADOS
+                # =========================
+                dados.append({
+
+                    "NF": get_text(
+                        ide,
+                        "nfe:nNF",
+                        ns
+                    ),
+
+                    "Serie": get_text(
+                        ide,
+                        "nfe:serie",
+                        ns
+                    ),
+
+                    "Status": status,
+
+                    "Chave": chave,
+
+                    "CPF/CNPJ": documento,
+
+                    "IE": ie_dest,
+
+                    "Destinatario": get_text(
+                        dest,
+                        "nfe:xNome",
+                        ns
+                    ),
+
+                    "UF Origem": uf_origem,
+
+                    "UF Destino": uf_destino,
+
+                    "Produto": produto,
+
+                    "Codigo": codigo,
+
+                    "Qtd": qtd,
+
+                    "NCM": ncm,
+
+                    "CFOP": cfop_xml,
+
+                    "CST": cst_xml,
+
+                    "Aliquota ICMS": aliquota_xml,
+
+                    "Valor Produto Total": round(
+                        valor_total,
+                        2
+                    ),
+
+                    "DIFAL XML": difal_xml,
+
+                    "DIFAL Calculado": difal_calc,
+
+                    "Diferença DIFAL": difal_diff,
+
+                    "Status DIFAL": status_difal,
+
+                    "FCP XML": fcp_xml,
+
+                    "Tem Regra ST": (
+                        "SIM"
+                        if regra_st is not None
+                        else "NAO"
+                    ),
+
+                    "Validação Fiscal": validacao,
+
+                    "Divergências": (
+                        " | ".join(divergencias)
+                    )
+
+                })
+
+            
+            barra.progress(
+                (i + 1) / len(arquivos)
+            )
+
+        except Exception as e:
+
+            st.error(
+                f"Erro XML {arq.name}: {e}"
+            )
 
 # =========================
 # OUTPUT
@@ -740,7 +841,10 @@ barra.progress((i + 1) / len(arquivos))
 df = pd.DataFrame(dados)
 
 if not df.empty:
-    st.success(f"✅ {len(df)} registros")
+
+    st.success(
+        f"✅ {len(df)} registros"
+    )
 
     # =========================
     # AUDITORIA SEQUÊNCIA
