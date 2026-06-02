@@ -507,7 +507,7 @@ if arquivos:
                     ) or 0
                 )
 
-                difal_calc = calcular_difal(
+                difal_calc = calcular_difal_base_dupla(
                     valor_total
                 )
 
@@ -714,7 +714,7 @@ if arquivos:
                     if uf_destino == "RJ":
                         aliq_interna = 0.20
 
-                    difal_calc = calcular_difal(
+                    difal_calc = calcular_difal_base_dupla(
                         valor_total,
                         aliq_inter=0.12,
                         aliq_interna=aliq_interna
