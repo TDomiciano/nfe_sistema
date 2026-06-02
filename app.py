@@ -469,39 +469,46 @@ if arquivos:
                     ) or 0
                 )
 
-                valor_total = (
-    valor_prod - valor_desc
-)
+                for item in itens:
 
-# =========================
-# DIFAL
-# =========================
+    prod = item.find("nfe:prod", ns)
+    imposto = item.find("nfe:imposto", ns)
 
-difal_xml = float(get_text(icms_ufdest, "nfe:vICMSUFDest", ns) or 0)
-fcp_xml = float(get_text(icms_ufdest, "nfe:vFCPUFDest", ns) or 0)
+    icms_ufdest = (
+        imposto.find(".//nfe:ICMSUFDest", ns)
+        if imposto is not None
+        else None
+    )
 
-vBC_destino = float(get_text(icms_ufdest, "nfe:vBCUFDest", ns) or 0)
-pICMSUFDest = float(get_text(icms_ufdest, "nfe:pICMSUFDest", ns) or 0)
-pICMSInter = float(get_text(icms_ufdest, "nfe:pICMSInter", ns) or 12)
+    valor_prod = float(get_text(prod, "nfe:vProd", ns) or 0)
+    valor_desc = float(get_text(prod, "nfe:vDesc", ns) or 0)
 
-def calcular_difal(vBC, pDest, pInter):
-    icms_destino = vBC * (pDest / 100)
-    icms_origem = vBC * (pInter / 100)
-    return round(icms_destino - icms_origem, 2)
+    valor_total = valor_prod - valor_desc
 
-difal_calc = calcular_difal(
-    vBC_destino,
-    pICMSUFDest,
-    pICMSInter
-)
+    # =========================
+    # DIFAL (TEM QUE FICAR AQUI DENTRO)
+    # =========================
 
-difal_diff = round(difal_xml - difal_calc, 2)
+    difal_xml = float(get_text(icms_ufdest, "nfe:vICMSUFDest", ns) or 0)
+    fcp_xml = float(get_text(icms_ufdest, "nfe:vFCPUFDest", ns) or 0)
 
-status_difal = (
-    "OK"
-    if abs(difal_diff) <= 0.01
-    else "DIVERGENTE"
-)
+    vBC_destino = float(get_text(icms_ufdest, "nfe:vBCUFDest", ns) or 0)
+    pICMSUFDest = float(get_text(icms_ufdest, "nfe:pICMSUFDest", ns) or 0)
+    pICMSInter = float(get_text(icms_ufdest, "nfe:pICMSInter", ns) or 12)
+
+    difal_calc = round(
+        vBC_destino * (pICMSUFDest / 100)
+        - vBC_destino * (pICMSInter / 100),
+        2
+    )
+
+    difal_diff = round(difal_xml - difal_calc, 2)
+
+    status_difal = (
+        "OK"
+        if abs(difal_diff) <= 0.01
+        else "DIVERGENTE"
+    )
 
                 # =========================
                 # REGRA FISCAL
