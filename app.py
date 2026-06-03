@@ -294,7 +294,7 @@ if arquivos:
         "nfe": "http://www.portalfiscal.inf.br/nfe"
     }
 
-    # =========================
+# =========================
 # BUSCA CANCELADAS
 # =========================
 for i, arq in enumerate(arquivos):
