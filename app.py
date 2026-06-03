@@ -609,21 +609,7 @@ if arquivos:
                     ) or 0
                 )
 
-                difal_calc = calcular_difal_base_dupla(
-                    valor_total
-                )
-
-                difal_diff = round(
-                    difal_xml - difal_calc,
-                    2
-                )
-
-                status_difal = (
-                    "OK"
-                    if abs(difal_diff) <= 0.01
-                    else "DIVERGENTE"
-                )
-
+                
                 # =========================
                 # REGRA FISCAL
                 # =========================
@@ -798,146 +784,161 @@ if arquivos:
                         "DEVERIA TER ST"
                     )
 
-                # =========================
-                # DIFAL
-                # =========================
-                pj_com_ie = (
-                    tipo_cliente == "PJ"
-                    and ie_dest.strip() != ""
-                )
+# =========================
+# DIFAL
+# =========================
+pj_com_ie = (
+    tipo_cliente == "PJ"
+    and ie_dest.strip() != ""
+)
 
-                if (
-                    uf_origem != uf_destino
-                    and not pj_com_ie
-                ):
+if (
+    uf_origem != uf_destino
+    and not pj_com_ie
+):
 
-                    aliq_interna = 0.18
+    aliq_inter = obter_aliquota_interestadual(
+        uf_origem,
+        uf_destino
+    )
 
-                    if uf_destino == "RJ":
-                        aliq_interna = 0.20
+    aliq_interna = obter_aliquota_interna(
+        uf_destino
+    )
 
-                    difal_calc = calcular_difal_base_dupla(
-                        valor_total,
-                        aliq_inter=0.12,
-                        aliq_interna=aliq_interna
-                    )
+    fcp_calc = (
+        valor_total *
+        obter_fcp(uf_destino)
+    )
 
-                    difal_diff = round(
-                        difal_xml - difal_calc,
-                        2
-                    )
+    difal_calc = calcular_difal_base_dupla(
+        valor_total,
+        aliq_inter=aliq_inter,
+        aliq_interna=aliq_interna
+    )
 
-                    status_difal = (
-                        "OK"
-                        if abs(difal_diff) <= 0.01
-                        else "DIVERGENTE"
-                    )
+    difal_diff = round(
+        difal_xml - difal_calc,
+        2
+    )
 
-                    if abs(difal_diff) > 0.01:
+    status_difal = (
+        "OK"
+        if abs(difal_diff) <= 0.01
+        else "DIVERGENTE"
+    )
 
-                        divergencias.append(
-                            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
-                        )
+    if abs(difal_diff) > 0.01:
 
-                else:
+        divergencias.append(
+            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
+        )
 
-                    difal_calc = 0
-                    difal_diff = 0
-                    status_difal = "NÃO APLICÁVEL"
+else:
 
-                validacao = (
-                    "OK"
-                    if len(divergencias) == 0
-                    else "DIVERGENTE"
-                )
-                # =========================
-                # DADOS
-                # =========================
-                dados.append({
+    difal_calc = 0
+    difal_diff = 0
+    fcp_calc = 0
+    aliq_inter = 0
+    aliq_interna = 0
+    status_difal = "NÃO APLICÁVEL"
+# =========================
+# DADOS
+# =========================
+dados.append({
 
-                    "NF": get_text(
-                        ide,
-                        "nfe:nNF",
-                        ns
-                    ),
+    "NF": get_text(
+        ide,
+        "nfe:nNF",
+        ns
+    ),
 
-                    "Serie": get_text(
-                        ide,
-                        "nfe:serie",
-                        ns
-                    ),
+    "Serie": get_text(
+        ide,
+        "nfe:serie",
+        ns
+    ),
 
-                    "Status": status,
+    "Status": status,
 
-                    "Chave": chave,
+    "Chave": chave,
 
-                    "CPF/CNPJ": documento,
+    "CPF/CNPJ": documento,
 
-                    "IE": ie_dest,
+    "IE": ie_dest,
 
-                    "Destinatario": get_text(
-                        dest,
-                        "nfe:xNome",
-                        ns
-                    ),
+    "Destinatario": get_text(
+        dest,
+        "nfe:xNome",
+        ns
+    ),
 
-                    "UF Origem": uf_origem,
+    "UF Origem": uf_origem,
 
-                    "UF Destino": uf_destino,
+    "UF Destino": uf_destino,
 
-                    "Produto": produto,
+    "Produto": produto,
 
-                    "Codigo": codigo,
+    "Codigo": codigo,
 
-                    "Qtd": qtd,
+    "Qtd": qtd,
 
-                    "NCM": ncm,
+    "NCM": ncm,
 
-                    "CFOP": cfop_xml,
+    "CFOP": cfop_xml,
 
-                    "CST": cst_xml,
+    "CST": cst_xml,
 
-                    "Aliquota ICMS": aliquota_xml,
+    "Aliquota ICMS": aliquota_xml,
 
-                    "Valor Produto Total": round(
-                        valor_total,
-                        2
-                    ),
+    "Valor Produto Total": round(
+        valor_total,
+        2
+    ),
 
-                    "DIFAL XML": difal_xml,
+    "DIFAL XML": difal_xml,
 
-                    "DIFAL Calculado": difal_calc,
+    "DIFAL Calculado": difal_calc,
 
-                    "Diferença DIFAL": difal_diff,
+    "Diferença DIFAL": difal_diff,
 
-                    "Status DIFAL": status_difal,
+    "Status DIFAL": status_difal,
 
-                    "FCP XML": fcp_xml,
+    "FCP XML": fcp_xml,
 
-                    "Tem Regra ST": (
-                        "SIM"
-                        if regra_st is not None
-                        else "NAO"
-                    ),
+    "Aliq Inter": round(
+        aliq_inter * 100,
+        2
+    ),
 
-                    "Validação Fiscal": validacao,
+    "Aliq Interna": round(
+        aliq_interna * 100,
+        2
+    ),
 
-                    "Divergências": (
-                        " | ".join(divergencias)
-                    )
+    "FCP Calculado": round(
+        fcp_calc,
+        2
+    ),
 
-                })
+    "Diferença FCP": round(
+        fcp_xml - fcp_calc,
+        2
+    ),
 
-            
-            barra.progress(
-                (i + 1) / len(arquivos)
-            )
+    "Tem Regra ST": (
+        "SIM"
+        if regra_st is not None
+        else "NAO"
+    ),
 
-        except Exception as e:
+    "Validação Fiscal": validacao,
 
-            st.error(
-                f"Erro XML {arq.name}: {e}"
-            )
+    "Divergências": (
+        " | ".join(divergencias)
+    )
+
+})
 
 # =========================
 # OUTPUT
