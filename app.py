@@ -1152,10 +1152,7 @@ if arquivos:
                         file_name="auditoria_fiscal.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
-
-    # =========================
-    # TABELA PRINCIPAL
-    # =========================
+    
     st.dataframe(
         df,
         use_container_width=True
