@@ -297,26 +297,16 @@ if arquivos:
 # =========================
 # BUSCA CANCELADAS
 # =========================
-for i, arq in enumerate(arquivos):
+for arq in arquivos:
 
     try:
-
         arq.seek(0)
-
         tree = ET.parse(arq)
-
         root = tree.getroot()
 
-        xml_str = ET.tostring(
-            root,
-            encoding="unicode"
-        ).upper()
+        xml_str = ET.tostring(root, encoding="unicode").upper()
 
-        if (
-            "CANCELAMENTO" in xml_str
-            and
-            "110111" in xml_str
-        ):
+        if "CANCELAMENTO" in xml_str and "110111" in xml_str:
 
             chave_evento = ""
 
@@ -326,45 +316,27 @@ for i, arq in enumerate(arquivos):
             )
 
             if ret_evento is not None:
-
-                chave_evento = get_text(
-                    ret_evento,
-                    "nfe:chNFe",
-                    ns
-                )
+                chave_evento = get_text(ret_evento, "nfe:chNFe", ns)
 
             if chave_evento == "":
-
-                inf_evento = root.find(
-                    ".//nfe:infEvento",
-                    ns
-                )
-
-                chave_evento = get_text(
-                    inf_evento,
-                    "nfe:chNFe",
-                    ns
-                )
+                inf_evento = root.find(".//nfe:infEvento", ns)
+                chave_evento = get_text(inf_evento, "nfe:chNFe", ns)
 
             if chave_evento:
-
                 chaves_canceladas.add(chave_evento)
 
-    except Exception as e:
+    except Exception:
         pass
 
-    # =========================
-    # LOOP XMLS
-    # =========================
-    for i, arq in enumerate(arquivos):
+# =========================
+# LOOP XMLS PRINCIPAL
+# =========================
+for arq in arquivos:
 
-        try:
-
-            arq.seek(0)
-
-            tree = ET.parse(arq)
-
-            root = tree.getroot()
+    try:
+        arq.seek(0)
+        tree = ET.parse(arq)
+        root = tree.getroot()
 
             # IGNORA EVENTOS
             if root.find(
