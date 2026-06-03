@@ -738,7 +738,7 @@ if arquivos:
                         ):
 
                             divergencias.append(
-                                f"ICMS XML ({aliquota_xml}) diferente da regra ({aliquota_regra})"
+                                f"ICMS XML ({aliquota_xml}) diferente da regra      ({aliquota_regra})"
                             )
 
                     except:
@@ -842,114 +842,121 @@ if arquivos:
                     aliq_inter = 0
                     aliq_interna = 0
                     status_difal = "NÃO APLICÁVEL"
-# =========================
-# DADOS
-# =========================
-dados.append({
 
-    "NF": get_text(
-        ide,
-        "nfe:nNF",
-        ns
-    ),
+                # =========================
+                # DADOS
+                # =========================
 
-    "Serie": get_text(
-        ide,
-        "nfe:serie",
-        ns
-    ),
+                validacao = (
+                    "OK"
+                    if len(divergencias) == 0
+                    else "DIVERGENTE"
+                )
+                dados.append({
 
-    "Status": status,
+                    "NF": get_text(
+                        ide,
+                        "nfe:nNF",
+                        ns
+                    ),
 
-    "Chave": chave,
+                    "Serie": get_text(
+                        ide,
+                        "nfe:serie",
+                        ns
+                    ),
 
-    "CPF/CNPJ": documento,
+                    "Status": status,
 
-    "IE": ie_dest,
+                    "Chave": chave,
 
-    "Destinatario": get_text(
-        dest,
-        "nfe:xNome",
-        ns
-    ),
+                    "CPF/CNPJ": documento,
+                
+                    "IE": ie_dest,
 
-    "UF Origem": uf_origem,
+                    "Destinatario": get_text(
+                        dest,
+                        "nfe:xNome",
+                        ns
+                    ),
 
-    "UF Destino": uf_destino,
+                    "UF Origem": uf_origem,
 
-    "Produto": produto,
+                    "UF Destino": uf_destino,
 
-    "Codigo": codigo,
+                    "Produto": produto,
 
-    "Qtd": qtd,
+                    "Codigo": codigo,
 
-    "NCM": ncm,
+                    "Qtd": qtd,
 
-    "CFOP": cfop_xml,
+                    "NCM": ncm,
 
-    "CST": cst_xml,
+                    "CFOP": cfop_xml,
 
-    "Aliquota ICMS": aliquota_xml,
+                    "CST": cst_xml,
 
-    "Valor Produto Total": round(
-        valor_total,
-        2
-    ),
+                    "Aliquota ICMS": aliquota_xml,
 
-    "DIFAL XML": difal_xml,
+                    "Valor Produto Total": round(
+                        valor_total,
+                        2
+                    ),
 
-    "DIFAL Calculado": difal_calc,
+                    "DIFAL XML": difal_xml,
 
-    "Diferença DIFAL": difal_diff,
+                    "DIFAL Calculado": difal_calc,
 
-    "Status DIFAL": status_difal,
+                    "Diferença DIFAL": difal_diff,
 
-    "FCP XML": fcp_xml,
+                    "Status DIFAL": status_difal,
 
-    "Aliq Inter": round(
-        aliq_inter * 100,
-        2
-    ),
+                    "FCP XML": fcp_xml,
 
-    "Aliq Interna": round(
-        aliq_interna * 100,
-        2
-    ),
+                    "Aliq Inter": round(
+                        aliq_inter * 100,
+                        2
+                    ),
 
-    "FCP Calculado": round(
-        fcp_calc,
-        2
-    ),
+                    "Aliq Interna": round(
+                        aliq_interna * 100,
+                        2
+                    ),
 
-    "Diferença FCP": round(
-        fcp_xml - fcp_calc,
-        2
-    ),
+                    "FCP Calculado": round(
+                        fcp_calc,
+                        2
+                    ),
 
-    "Tem Regra ST": (
-        "SIM"
-        if regra_st is not None
-        else "NAO"
-    ),
+                    "Diferença FCP": round(
+                        fcp_xml - fcp_calc,
+                        2
+                    ),
 
-    "Validação Fiscal": validacao,
+                    "Tem Regra ST": (
+                        "SIM"
+                        if regra_st is not None
+                        else "NAO"
+                    ),
 
-    "Divergências": (
-        " | ".join(divergencias)
-    )
+                    "Validação Fiscal": validacao,
 
-})
+                    "Divergências": (
+                        " | ".join(divergencias)
+                    )
 
-# =========================
-# OUTPUT
-# =========================
-df = pd.DataFrame(dados)
+                })
 
-if not df.empty:
+                # =========================
+                # OUTPUT
+                # =========================
+                df = pd.DataFrame(dados)
 
-    st.success(
-        f"✅ {len(df)} registros"
-    )
+                if not df.empty:
+
+                    st.success(
+                        f"✅ {len(df)} registros"
+                    )
 
     # =========================
     # AUDITORIA SEQUÊNCIA
