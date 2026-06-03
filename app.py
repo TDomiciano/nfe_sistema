@@ -90,6 +90,45 @@ def carregar_regras():
 
 regras, regras_st = carregar_regras()
 
+
+@st.cache_data
+def carregar_aliquotas():
+
+    tabela_icms = pd.read_excel(
+        "aliquotas.xlsx",
+        sheet_name="ICMS_DIFAL",
+        index_col=0
+    )
+
+    tabela_fcp = pd.read_excel(
+        "aliquotas.xlsx",
+        sheet_name="FCP"
+    )
+
+    tabela_icms.index = (
+        tabela_icms.index.astype(str)
+        .str.upper()
+        .str.strip()
+    )
+
+    tabela_icms.columns = (
+        tabela_icms.columns.astype(str)
+        .str.upper()
+        .str.strip()
+    )
+
+    tabela_fcp["UF"] = (
+        tabela_fcp["UF"]
+        .astype(str)
+        .str.upper()
+        .str.strip()
+    )
+
+    return tabela_icms, tabela_fcp
+
+
+tabela_icms, tabela_fcp = carregar_aliquotas()
+
 # =========================
 # XML SAFE
 # =========================
@@ -105,7 +144,7 @@ def get_text(element, tag, ns):
 # =========================
 # DIFAL BASE DUPLA
 # =========================
-def calcular_difal(
+def calcular_difal_base_dupla(
     valor,
     aliq_inter=0.12,
     aliq_interna=0.18
@@ -113,16 +152,81 @@ def calcular_difal(
 
     icms_origem = valor * aliq_inter
 
-    base1 = valor - icms_origem
+    base_dupla = (
+        valor - icms_origem
+    ) / (1 - aliq_interna)
 
-    base2 = base1 / (1 - aliq_interna)
-
-    icms_interno = base2 * aliq_interna
+    icms_destino = (
+        base_dupla * aliq_interna
+    )
 
     return round(
-        icms_interno - icms_origem,
+        icms_destino - icms_origem,
         2
     )
+
+# =========================
+# ALIQUOTAS DIFAL
+# =========================
+def obter_aliquota_interestadual(
+    uf_origem,
+    uf_destino
+):
+
+    try:
+
+        return float(
+            tabela_icms.loc[
+                uf_origem.upper().strip(),
+                uf_destino.upper().strip()
+            ]
+        ) / 100
+
+    except:
+
+        return 0.12
+
+
+def obter_aliquota_interna(
+    uf_destino
+):
+
+    try:
+
+        return float(
+            tabela_icms.loc[
+                uf_destino.upper().strip(),
+                uf_destino.upper().strip()
+            ]
+        ) / 100
+
+    except:
+
+        return 0.18
+
+
+def obter_fcp(
+    uf_destino
+):
+
+    try:
+
+        linha = tabela_fcp[
+            tabela_fcp["UF"]
+            ==
+            uf_destino.upper().strip()
+        ]
+
+        if not linha.empty:
+
+            return float(
+                linha.iloc[0]["FCP"]
+            ) / 100
+
+    except:
+        pass
+
+    return 0
 
 # =========================
 # UPLOAD
@@ -190,152 +294,121 @@ if arquivos:
         "nfe": "http://www.portalfiscal.inf.br/nfe"
     }
 
-    # =========================
-    # BUSCA CANCELADAS
-    # =========================
-    for i, arq in enumerate(arquivos):
+# =========================
+# BUSCA CANCELADAS
+# =========================
+for arq in arquivos:
 
-        try:
+    try:
+        arq.seek(0)
+        tree = ET.parse(arq)
+        root = tree.getroot()
 
-            arq.seek(0)
+        xml_str = ET.tostring(root, encoding="unicode").upper()
 
-            tree = ET.parse(arq)
+        if "CANCELAMENTO" in xml_str and "110111" in xml_str:
 
-            root = tree.getroot()
+            chave_evento = ""
 
-            xml_str = ET.tostring(
-                root,
-                encoding="unicode"
-            ).upper()
+            ret_evento = root.find(
+                ".//nfe:retEvento/nfe:infEvento",
+                ns
+            )
 
-            if (
-                "CANCELAMENTO" in xml_str
-                and
-                "110111" in xml_str
-            ):
+            if ret_evento is not None:
+                chave_evento = get_text(ret_evento, "nfe:chNFe", ns)
 
-                chave_evento = ""
+            if chave_evento == "":
+                inf_evento = root.find(".//nfe:infEvento", ns)
+                chave_evento = get_text(inf_evento, "nfe:chNFe", ns)
 
-                ret_evento = root.find(
-                    ".//nfe:retEvento/nfe:infEvento",
-                    ns
-                )
+            if chave_evento:
+                chaves_canceladas.add(chave_evento)
 
-                if ret_evento is not None:
+    except Exception:
+        pass
 
-                    chave_evento = get_text(
-                        ret_evento,
-                        "nfe:chNFe",
-                        ns
-                    )
+# =========================
+# LOOP XMLS PRINCIPAL
+# =========================
+for arq in arquivos:
 
-                if chave_evento == "":
+    try:
+        arq.seek(0)
+        tree = ET.parse(arq)
+        root = tree.getroot()
 
-                    inf_evento = root.find(
-                        ".//nfe:infEvento",
-                        ns
-                    )
-
-                    chave_evento = get_text(
-                        inf_evento,
-                        "nfe:chNFe",
-                        ns
-                    )
-
-                if chave_evento != "":
-
-                    chaves_canceladas.add(
-                        chave_evento
-                    )
-
-        except:
-            pass
-
-    # =========================
-    # LOOP XMLS
-    # =========================
-    for i, arq in enumerate(arquivos):
-
-        try:
-
-            arq.seek(0)
-
-            tree = ET.parse(arq)
-
-            root = tree.getroot()
-
-            # IGNORA EVENTOS
-            if root.find(
+        # IGNORA EVENTOS
+        if root.find(
                 ".//nfe:infEvento",
                 ns
             ) is not None:
 
-                continue
+           continue
 
-            ide = root.find(".//nfe:ide", ns)
+        ide = root.find(".//nfe:ide", ns)
 
-            emit = root.find(".//nfe:emit", ns)
+        emit = root.find(".//nfe:emit", ns)
 
-            dest = root.find(".//nfe:dest", ns)
+        dest = root.find(".//nfe:dest", ns)
 
-            ender_emit = (
-                emit.find("nfe:enderEmit", ns)
-                if emit is not None
-                else None
+        ender_emit = (
+            emit.find("nfe:enderEmit", ns)
+            if emit is not None
+            else None
+        )
+
+        ender_dest = (
+            dest.find("nfe:enderDest", ns)
+            if dest is not None
+            else None
+        )
+
+        uf_origem = get_text(
+            ender_emit,
+            "nfe:UF",
+            ns
+        )
+
+        uf_destino = get_text(
+            ender_dest,
+            "nfe:UF",
+            ns
+        )
+
+        cnpj = get_text(
+            dest,
+            "nfe:CNPJ",
+            ns
+        )
+        cpf = get_text(
+            dest,
+            "nfe:CPF",
+            ns
+        )
+
+        documento = cnpj if cnpj else cpf
+
+        tipo_cliente = (
+            "PJ"
+            if cnpj
+            else "PF"
+        )
+
+        ie_dest = ""
+
+        if dest is not None:
+
+            ie_tag = dest.find(
+               ".//nfe:IE",
+               ns
             )
 
-            ender_dest = (
-                dest.find("nfe:enderDest", ns)
-                if dest is not None
-                else None
+            ie_dest = (
+               ie_tag.text
+               if ie_tag is not None
+               else ""
             )
-
-            uf_origem = get_text(
-                ender_emit,
-                "nfe:UF",
-                ns
-            )
-
-            uf_destino = get_text(
-                ender_dest,
-                "nfe:UF",
-                ns
-            )
-
-            cnpj = get_text(
-                dest,
-                "nfe:CNPJ",
-                ns
-            )
-
-            cpf = get_text(
-                dest,
-                "nfe:CPF",
-                ns
-            )
-
-            documento = cnpj if cnpj else cpf
-
-            tipo_cliente = (
-                "PJ"
-                if cnpj
-                else "PF"
-            )
-
-            ie_dest = ""
-
-            if dest is not None:
-
-                ie_tag = dest.find(
-                    ".//nfe:IE",
-                    ns
-                )
-
-                ie_dest = (
-                    ie_tag.text
-                    if ie_tag is not None
-                    else ""
-                )
 
             # =========================
             # CHAVE
@@ -505,21 +578,7 @@ if arquivos:
                     ) or 0
                 )
 
-                difal_calc = calcular_difal(
-                    valor_total
-                )
-
-                difal_diff = round(
-                    difal_xml - difal_calc,
-                    2
-                )
-
-                status_difal = (
-                    "OK"
-                    if abs(difal_diff) <= 0.01
-                    else "DIVERGENTE"
-                )
-
+                
                 # =========================
                 # REGRA FISCAL
                 # =========================
@@ -648,7 +707,7 @@ if arquivos:
                         ):
 
                             divergencias.append(
-                                f"ICMS XML ({aliquota_xml}) diferente da regra ({aliquota_regra})"
+                                f"ICMS XML ({aliquota_xml}) diferente da regra      ({aliquota_regra})"
                             )
 
                     except:
@@ -707,14 +766,23 @@ if arquivos:
                     and not pj_com_ie
                 ):
 
-                    aliq_interna = 0.18
+                    aliq_inter = obter_aliquota_interestadual(
+                        uf_origem,
+                        uf_destino
+                    )
 
-                    if uf_destino == "RJ":
-                        aliq_interna = 0.20
+                    aliq_interna = obter_aliquota_interna(
+                        uf_destino
+                    )
 
-                    difal_calc = calcular_difal(
+                    fcp_calc = (
+                        valor_total *
+                        obter_fcp(uf_destino)
+                    )
+
+                    difal_calc = calcular_difal_base_dupla(
                         valor_total,
-                        aliq_inter=0.12,
+                        aliq_inter=aliq_inter,
                         aliq_interna=aliq_interna
                     )
 
@@ -739,16 +807,20 @@ if arquivos:
 
                     difal_calc = 0
                     difal_diff = 0
+                    fcp_calc = 0
+                    aliq_inter = 0
+                    aliq_interna = 0
                     status_difal = "NÃO APLICÁVEL"
+
+                # =========================
+                # DADOS
+                # =========================
 
                 validacao = (
                     "OK"
                     if len(divergencias) == 0
                     else "DIVERGENTE"
                 )
-                # =========================
-                # DADOS
-                # =========================
                 dados.append({
 
                     "NF": get_text(
@@ -768,7 +840,7 @@ if arquivos:
                     "Chave": chave,
 
                     "CPF/CNPJ": documento,
-
+                
                     "IE": ie_dest,
 
                     "Destinatario": get_text(
@@ -810,6 +882,26 @@ if arquivos:
 
                     "FCP XML": fcp_xml,
 
+                    "Aliq Inter": round(
+                        aliq_inter * 100,
+                        2
+                    ),
+
+                    "Aliq Interna": round(
+                        aliq_interna * 100,
+                        2
+                    ),
+
+                    "FCP Calculado": round(
+                        fcp_calc,
+                        2
+                    ),
+
+                    "Diferença FCP": round(
+                        fcp_xml - fcp_calc,
+                        2
+                    ),
+
                     "Tem Regra ST": (
                         "SIM"
                         if regra_st is not None
@@ -824,222 +916,211 @@ if arquivos:
 
                 })
 
-            
-            barra.progress(
-                (i + 1) / len(arquivos)
-            )
+                # =========================
+                # OUTPUT
+                # =========================
+                df = pd.DataFrame(dados)
 
-        except Exception as e:
+                if not df.empty:
 
-            st.error(
-                f"Erro XML {arq.name}: {e}"
-            )
+                    st.success(
+                        f"✅ {len(df)} registros"
+                    )
 
-# =========================
-# OUTPUT
-# =========================
-df = pd.DataFrame(dados)
+                # =========================
+                # AUDITORIA SEQUÊNCIA
+                # =========================
+                st.subheader(
+                    "🔎 Auditoria Sequência NF"
+                )
 
-if not df.empty:
+                df_seq = df[
+                    df["Status"].isin(
+                        ["AUTORIZADA", "CANCELADA", "DENEGADA"]
+                    )
+                ].copy()
 
-    st.success(
-        f"✅ {len(df)} registros"
-    )
+                df_seq["NF"] = pd.to_numeric(
+                    df_seq["NF"],
+                    errors="coerce"
+                )
 
-    # =========================
-    # AUDITORIA SEQUÊNCIA
-    # =========================
-    st.subheader(
-        "🔎 Auditoria Sequência NF"
-    )
+                quebras = []
 
-    df_seq = df[
-        df["Status"].isin(
-            ["AUTORIZADA", "CANCELADA", "DENEGADA"]
-        )
-    ].copy()
+                for serie in df_seq["Serie"].dropna().unique():
 
-    df_seq["NF"] = pd.to_numeric(
-        df_seq["NF"],
-        errors="coerce"
-    )
+                    notas = sorted(
+                        df_seq[
+                            df_seq["Serie"] == serie
+                        ]["NF"]
+                        .dropna()
+                        .astype(int)
+                        .unique()
+                    )
 
-    quebras = []
+                    if len(notas) > 1:
 
-    for serie in df_seq["Serie"].dropna().unique():
+                        menor = min(notas)
+                        maior = max(notas)
 
-        notas = sorted(
-
-            df_seq[
-                df_seq["Serie"] == serie
-            ]["NF"]
-
-            .dropna()
-            .astype(int)
-            .unique()
-        )
-
-        if len(notas) > 1:
-
-            menor = min(notas)
-            maior = max(notas)
-
-            todas = set(
-                range(menor, maior + 1)
-            )
-
-            existentes = set(notas)
-
-            faltantes = sorted(
-                list(todas - existentes)
-            )
-
-            if len(faltantes) > 0:
-
-                quebras.append({
-
-                    "Serie": serie,
-                    "Menor NF": menor,
-                    "Maior NF": maior,
-                    "Qtd Quebras": len(faltantes),
-
-                    "Notas Faltantes":
-                        ", ".join(
-                            map(
-                                str,
-                                faltantes[:100]
-                            )
+                        todas = set(
+                            range(menor, maior + 1)
                         )
-                })
 
-    if len(quebras) > 0:
+                        existentes = set(notas)
 
-        df_quebras = pd.DataFrame(quebras)
+                        faltantes = sorted(
+                            list(todas - existentes)
+                         )
 
-        col1, col2, col3 = st.columns(3)
+                        if len(faltantes) > 0:
+            
+                            quebras.append({
 
-        col1.metric(
-            "Séries com Quebra",
-            len(df_quebras)
-        )
+                                "Serie": serie,
+                                "Menor NF": menor,
+                                "Maior NF": maior,
+                                "Qtd Quebras": len(faltantes),
 
-        col2.metric(
-            "Total Quebras",
-            sum(df_quebras["Qtd Quebras"])
-        )
+                                "Notas Faltantes":
+                                    ", ".join(
+                                        map(
+                                            str,
+                                             faltantes[:100]
+                                         )
+                                    )
+                            })
 
-        col3.metric(
-            "Status",
-            "ALERTA"
-        )
+                if len(quebras) > 0:
 
-        st.warning(
-            "⚠️ Quebras de sequência encontradas"
-        )
+                    df_quebras = pd.DataFrame(quebras)
 
-        st.dataframe(
-            df_quebras,
-            use_container_width=True
-        )
+                    col1, col2, col3 = st.columns(3)
 
-    else:
+                    col1.metric(
+                        "Séries com Quebra",
+                        len(df_quebras)
+                    )
 
-        df_quebras = pd.DataFrame()
+                    col2.metric(
+                        "Total Quebras",
+                        sum(df_quebras["Qtd Quebras"])
+                    )
 
-        st.success(
-            "✅ Nenhuma quebra encontrada"
-        )
+                    col3.metric(
+                        "Status",
+                        "ALERTA"
+                    )
 
-    # =========================
-    # CANCELADAS
-    # =========================
-    st.subheader(
-        "🚫 NF-e Canceladas"
-    )
+                    st.warning(
+                        "⚠️ Quebras de sequência encontradas"
+                    )
 
-    df_canceladas = df[
-        df["Status"] == "CANCELADA"
-    ].copy()
+                    st.dataframe(
+                        df_quebras,
+                        use_container_width=True
+                    )
 
-    if not df_canceladas.empty:
+                else:
 
-        st.warning(
-            f"⚠️ {len(df_canceladas)} NF canceladas"
-        )
+                    df_quebras = pd.DataFrame()
 
-        st.dataframe(
-            df_canceladas[
-                [
-                    "NF",
-                    "Serie",
-                    "CPF/CNPJ",
-                    "Destinatario",
-                    "Valor Produto Total",
-                    "Chave"
-                ]
-            ],
-            use_container_width=True
-        )
+                    st.success(
+                        "✅ Nenhuma quebra encontrada"
+                    )
 
-    else:
+                # =========================
+                # CANCELADAS
+                # =========================
+                st.subheader(
+                    "🚫 NF-e Canceladas"
+                )
 
-        st.success(
-            "✅ Nenhuma NF cancelada"
-        )
+                df_canceladas = df[
+                    df["Status"] == "CANCELADA"
+                ].copy()
 
-    # =========================
-    # HEADER + DOWNLOAD
-    # =========================
-    col1, col2 = st.columns([4, 1])
+                if not df_canceladas.empty:
 
-    with col1:
+                    st.warning(
+                        f"⚠️ {len(df_canceladas)} NF canceladas"
+                    )
 
-        st.subheader(
-            "📊 Auditoria Fiscal"
-        )
+                    st.dataframe(
+                        df_canceladas[
+                            [
+                                "NF",
+                                "Serie",
+                                "CPF/CNPJ",
+                                "Destinatario",
+                                "Valor Produto Total",
+                                "Chave"
+                            ]
+                        ],
+                        use_container_width=True
+                    )
 
-    # =========================
-    # EXPORTAÇÃO
-    # =========================
-    output = io.BytesIO()
+                else:
 
-    with pd.ExcelWriter(
-        output,
-        engine="openpyxl"
-    ) as writer:
+                    st.success(
+                        "✅ Nenhuma NF cancelada"
+                    )
 
-        df.to_excel(
-            writer,
-            index=False,
-            sheet_name="Auditoria Fiscal"
-        )
+                # =========================
+                # HEADER + DOWNLOAD
+                # =========================
+                col1, col2 = st.columns([4, 1])
 
-        if not df_quebras.empty:
+                with col1:
 
-            df_quebras.to_excel(
-                writer,
-                index=False,
-                sheet_name="Quebra Sequencia"
-            )
+                    st.subheader(
+                        "📊 Auditoria Fiscal"
+                    )
 
-        if not df_canceladas.empty:
+                # =========================
+                # EXPORTAÇÃO
+                # =========================
+                output = io.BytesIO()
 
-            df_canceladas.to_excel(
-                writer,
-                index=False,
-                sheet_name="NF Canceladas"
-            )
+                with pd.ExcelWriter(
+                    output,
+                    engine="openpyxl"
+                ) as writer:
 
-    output.seek(0)
+                    df.to_excel(
+                        writer,
+                        index=False,
+                        sheet_name="Auditoria Fiscal"
+                    )
 
-    with col2:
+                    if not df_quebras.empty:
 
-        st.download_button(
-            "⬇️ Baixar Excel",
-            output,
-            file_name="auditoria_fiscal.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+                        df_quebras.to_excel(
+                            writer,
+                            index=False,
+                            sheet_name="Quebra Sequencia"
+                        )
+
+                    if not df_canceladas.empty:
+
+                        df_canceladas.to_excel(
+                            writer,
+                            index=False,
+                            sheet_name="NF Canceladas"
+                        )
+
+                output.seek(0)
+
+                col1, col2 = st.columns([4, 1])
+
+                with col2:
+
+                    st.download_button(
+                        "⬇️ Baixar Excel",
+                        output,
+                        file_name="auditoria_fiscal.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
 
     # =========================
     # TABELA PRINCIPAL
