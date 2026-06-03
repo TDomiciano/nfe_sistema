@@ -1060,107 +1060,107 @@ if arquivos:
                         "✅ Nenhuma quebra encontrada"
                     )
 
-    # =========================
-    # CANCELADAS
-    # =========================
-    st.subheader(
-        "🚫 NF-e Canceladas"
-    )
+                # =========================
+                # CANCELADAS
+                # =========================
+                st.subheader(
+                    "🚫 NF-e Canceladas"
+                )
 
-    df_canceladas = df[
-        df["Status"] == "CANCELADA"
-    ].copy()
+                df_canceladas = df[
+                    df["Status"] == "CANCELADA"
+                ].copy()
 
-    if not df_canceladas.empty:
+                if not df_canceladas.empty:
 
-        st.warning(
-            f"⚠️ {len(df_canceladas)} NF canceladas"
-        )
+                    st.warning(
+                        f"⚠️ {len(df_canceladas)} NF canceladas"
+                    )
 
-        st.dataframe(
-            df_canceladas[
-                [
-                    "NF",
-                    "Serie",
-                    "CPF/CNPJ",
-                    "Destinatario",
-                    "Valor Produto Total",
-                    "Chave"
-                ]
-            ],
-            use_container_width=True
-        )
+                    st.dataframe(
+                        df_canceladas[
+                            [
+                                "NF",
+                                "Serie",
+                                "CPF/CNPJ",
+                                "Destinatario",
+                                "Valor Produto Total",
+                                "Chave"
+                            ]
+                        ],
+                        use_container_width=True
+                    )
 
-    else:
+                else:
 
-        st.success(
-            "✅ Nenhuma NF cancelada"
-        )
+                    st.success(
+                        "✅ Nenhuma NF cancelada"
+                    )
 
-    # =========================
-    # HEADER + DOWNLOAD
-    # =========================
-    col1, col2 = st.columns([4, 1])
+                # =========================
+                # HEADER + DOWNLOAD
+                # =========================
+                col1, col2 = st.columns([4, 1])
 
-    with col1:
+                with col1:
 
-        st.subheader(
-            "📊 Auditoria Fiscal"
-        )
+                    st.subheader(
+                        "📊 Auditoria Fiscal"
+                    )
 
-    # =========================
-    # EXPORTAÇÃO
-    # =========================
-    output = io.BytesIO()
+                # =========================
+                # EXPORTAÇÃO
+                # =========================
+                output = io.BytesIO()
 
-    with pd.ExcelWriter(
-        output,
-        engine="openpyxl"
-    ) as writer:
+                with pd.ExcelWriter(
+                    output,
+                    engine="openpyxl"
+                ) as writer:
 
-        df.to_excel(
-            writer,
-            index=False,
-            sheet_name="Auditoria Fiscal"
-        )
+                    df.to_excel(
+                        writer,
+                        index=False,
+                        sheet_name="Auditoria Fiscal"
+                    )
 
-        if not df_quebras.empty:
+                    if not df_quebras.empty:
 
-            df_quebras.to_excel(
-                writer,
-                index=False,
-                sheet_name="Quebra Sequencia"
-            )
+                        df_quebras.to_excel(
+                            writer,
+                            index=False,
+                            sheet_name="Quebra Sequencia"
+                        )
 
-        if not df_canceladas.empty:
+                    if not df_canceladas.empty:
 
-            df_canceladas.to_excel(
-                writer,
-                index=False,
-                sheet_name="NF Canceladas"
-            )
+                        df_canceladas.to_excel(
+                            writer,
+                            index=False,
+                            sheet_name="NF Canceladas"
+                        )
 
-    output.seek(0)
+                output.seek(0)
 
-    with col2:
+                with col2:
 
-        st.download_button(
-            "⬇️ Baixar Excel",
-            output,
-            file_name="auditoria_fiscal.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+                    st.download_button(
+                        "⬇️ Baixar Excel",
+                        output,
+                        file_name="auditoria_fiscal.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
 
-    # =========================
-    # TABELA PRINCIPAL
-    # =========================
-    st.dataframe(
-        df,
-        use_container_width=True
-    )
+                # =========================
+                # TABELA PRINCIPAL
+                # =========================
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
 
-else:
+                 else:
 
-    st.info(
-        "Envie XML ou ZIP"
-    )
+                st.info(
+                    "Envie XML ou ZIP"
+                )
