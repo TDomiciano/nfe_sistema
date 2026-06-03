@@ -971,7 +971,7 @@ if arquivos:
                     )
                 ].copy()
 
-                 df_seq["NF"] = pd.to_numeric(
+                df_seq["NF"] = pd.to_numeric(
                     df_seq["NF"],
                     errors="coerce"
                 )
