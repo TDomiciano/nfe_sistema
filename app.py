@@ -1109,7 +1109,7 @@ for arq in arquivos:
                             sheet_name="NF Canceladas"
                         )
 
-                output.seek(0)
+                 output.seek(0)
 
                 col1, col2 = st.columns([4, 1])
 
@@ -1121,6 +1121,12 @@ for arq in arquivos:
                         file_name="auditoria_fiscal.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
+
+    except Exception as e:
+
+        st.error(
+            f"Erro ao processar XML: {e}"
+        )
 
     # =========================
     # TABELA PRINCIPAL
