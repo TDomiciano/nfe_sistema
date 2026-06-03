@@ -346,7 +346,7 @@ for i, arq in enumerate(arquivos):
                     ns
                 )
 
-            if chave_evento != "":
+            if chave_evento:
 
                 chaves_canceladas.add(chave_evento)
 
@@ -1164,4 +1164,3 @@ else:
     st.info(
         "Envie XML ou ZIP"
     )
-
