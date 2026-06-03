@@ -1154,10 +1154,12 @@ if arquivos:
                 # =========================
                 # TABELA PRINCIPAL
                 # =========================
-                st.dataframe(
-                    df,
-                    use_container_width=True
-                )
+                if not df.empty:
+
+                    st.dataframe(
+                        df,
+                        use_container_width=True
+                    )
 
                 else:
 
