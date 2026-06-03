@@ -1151,14 +1151,17 @@ if arquivos:
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
 
-                # =========================
-                # TABELA PRINCIPAL
-                # =========================
-                st.dataframe(
-                        df,
-                        use_container_width=True
-                    )
+    # =========================
+    # TABELA PRINCIPAL
+    # =========================
+    st.dataframe(
+        df,
+        use_container_width=True
+    )
 
-            else:
+else:
 
-                st.info("Envie XML ou ZIP")
+    st.info(
+        "Envie XML ou ZIP"
+    )
+
