@@ -1142,6 +1142,8 @@ if arquivos:
 
                 output.seek(0)
 
+                col1, col2 = st.columns([4, 1])
+
                 with col2:
 
                     st.download_button(
