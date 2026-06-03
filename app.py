@@ -947,16 +947,16 @@ if arquivos:
 
                 })
 
-                # =========================
-                # OUTPUT
-                # =========================
-                df = pd.DataFrame(dados)
+# =========================
+# OUTPUT
+# =========================
+df = pd.DataFrame(dados)
 
-                if not df.empty:
+if not df.empty:
 
-                    st.success(
-                        f"✅ {len(df)} registros"
-                    )
+    st.success(
+        f"✅ {len(df)} registros"
+    )
 
     # =========================
     # AUDITORIA SEQUÊNCIA
@@ -981,11 +981,9 @@ if arquivos:
     for serie in df_seq["Serie"].dropna().unique():
 
         notas = sorted(
-
             df_seq[
                 df_seq["Serie"] == serie
             ]["NF"]
-
             .dropna()
             .astype(int)
             .unique()
