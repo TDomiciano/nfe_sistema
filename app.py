@@ -784,33 +784,32 @@ if arquivos:
                         "DEVERIA TER ST"
                     )
 
-# =========================
-# DIFAL
-# =========================
-pj_com_ie = (
-    tipo_cliente == "PJ"
-    and ie_dest.strip() != ""
-)
+                # =========================
+                # DIFAL
+                # =========================
+                pj_com_ie = (
+                    tipo_cliente == "PJ"
+                    and ie_dest.strip() != ""
+                )
 
-if (
-    uf_origem != uf_destino
-    and not pj_com_ie
-):
+                if (
+                    uf_origem != uf_destino
+                    and not pj_com_ie
+                ):
 
-    aliq_inter = obter_aliquota_interestadual(
-        uf_origem,
-        uf_destino
-    )
+                    aliq_inter = obter_aliquota_interestadual(
+                        uf_origem,
+                        uf_destino
+                    )
 
-    aliq_interna = obter_aliquota_interna(
-        uf_destino
-    )
+                    aliq_interna = obter_aliquota_interna(
+                        uf_destino
+                    )
 
-    fcp_calc = (
-        valor_total *
-        obter_fcp(uf_destino)
-    )
-
+                    fcp_calc = (
+                        valor_total *
+                        obter_fcp(uf_destino)
+                    )
     difal_calc = calcular_difal_base_dupla(
         valor_total,
         aliq_inter=aliq_inter,
