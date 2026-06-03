@@ -947,118 +947,118 @@ if arquivos:
 
                 })
 
-# =========================
-# OUTPUT
-# =========================
-df = pd.DataFrame(dados)
+                # =========================
+                # OUTPUT
+                # =========================
+                df = pd.DataFrame(dados)
 
-if not df.empty:
+                if not df.empty:
 
-    st.success(
-        f"✅ {len(df)} registros"
-    )
+                    st.success(
+                        f"✅ {len(df)} registros"
+                    )
 
-    # =========================
-    # AUDITORIA SEQUÊNCIA
-    # =========================
-    st.subheader(
-        "🔎 Auditoria Sequência NF"
-    )
+                # =========================
+                # AUDITORIA SEQUÊNCIA
+                # =========================
+                st.subheader(
+                    "🔎 Auditoria Sequência NF"
+                )
 
-    df_seq = df[
-        df["Status"].isin(
-            ["AUTORIZADA", "CANCELADA", "DENEGADA"]
-        )
-    ].copy()
+                df_seq = df[
+                    df["Status"].isin(
+                        ["AUTORIZADA", "CANCELADA", "DENEGADA"]
+                    )
+                ].copy()
 
-    df_seq["NF"] = pd.to_numeric(
-        df_seq["NF"],
-        errors="coerce"
-    )
+                 df_seq["NF"] = pd.to_numeric(
+                    df_seq["NF"],
+                    errors="coerce"
+                )
 
-    quebras = []
+                quebras = []
 
-    for serie in df_seq["Serie"].dropna().unique():
+                for serie in df_seq["Serie"].dropna().unique():
 
-        notas = sorted(
-            df_seq[
-                df_seq["Serie"] == serie
-            ]["NF"]
-            .dropna()
-            .astype(int)
-            .unique()
-        )
+                    notas = sorted(
+                        df_seq[
+                            df_seq["Serie"] == serie
+                        ]["NF"]
+                        .dropna()
+                        .astype(int)
+                        .unique()
+                    )
 
-        if len(notas) > 1:
+                    if len(notas) > 1:
 
-            menor = min(notas)
-            maior = max(notas)
+                        menor = min(notas)
+                        maior = max(notas)
 
-            todas = set(
-                range(menor, maior + 1)
-            )
-
-            existentes = set(notas)
-
-            faltantes = sorted(
-                list(todas - existentes)
-            )
-
-            if len(faltantes) > 0:
-
-                quebras.append({
-
-                    "Serie": serie,
-                    "Menor NF": menor,
-                    "Maior NF": maior,
-                    "Qtd Quebras": len(faltantes),
-
-                    "Notas Faltantes":
-                        ", ".join(
-                            map(
-                                str,
-                                faltantes[:100]
-                            )
+                        todas = set(
+                            range(menor, maior + 1)
                         )
-                })
 
-    if len(quebras) > 0:
+                        existentes = set(notas)
 
-        df_quebras = pd.DataFrame(quebras)
+                        faltantes = sorted(
+                            list(todas - existentes)
+                         )
 
-        col1, col2, col3 = st.columns(3)
+                        if len(faltantes) > 0:
+            
+                            quebras.append({
 
-        col1.metric(
-            "Séries com Quebra",
-            len(df_quebras)
-        )
+                                "Serie": serie,
+                                "Menor NF": menor,
+                                "Maior NF": maior,
+                                "Qtd Quebras": len(faltantes),
 
-        col2.metric(
-            "Total Quebras",
-            sum(df_quebras["Qtd Quebras"])
-        )
+                                "Notas Faltantes":
+                                    ", ".join(
+                                        map(
+                                            str,
+                                             faltantes[:100]
+                                         )
+                                    )
+                            })
 
-        col3.metric(
-            "Status",
-            "ALERTA"
-        )
+                if len(quebras) > 0:
 
-        st.warning(
-            "⚠️ Quebras de sequência encontradas"
-        )
+                    df_quebras = pd.DataFrame(quebras)
 
-        st.dataframe(
-            df_quebras,
-            use_container_width=True
-        )
+                    col1, col2, col3 = st.columns(3)
 
-    else:
+                    col1.metric(
+                        "Séries com Quebra",
+                        len(df_quebras)
+                    )
 
-        df_quebras = pd.DataFrame()
+                    col2.metric(
+                        "Total Quebras",
+                        sum(df_quebras["Qtd Quebras"])
+                    )
 
-        st.success(
-            "✅ Nenhuma quebra encontrada"
-        )
+                    col3.metric(
+                        "Status",
+                        "ALERTA"
+                    )
+
+                    st.warning(
+                        "⚠️ Quebras de sequência encontradas"
+                    )
+
+                    st.dataframe(
+                        df_quebras,
+                        use_container_width=True
+                    )
+
+                else:
+
+                    df_quebras = pd.DataFrame()
+
+                    st.success(
+                        "✅ Nenhuma quebra encontrada"
+                    )
 
     # =========================
     # CANCELADAS
