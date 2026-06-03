@@ -1109,7 +1109,7 @@ for arq in arquivos:
                             sheet_name="NF Canceladas"
                         )
 
-                 output.seek(0)
+                output.seek(0)
 
                 col1, col2 = st.columns([4, 1])
 
@@ -1136,8 +1136,8 @@ for arq in arquivos:
         use_container_width=True
     )
 
-else:
+    else:
 
-    st.info(
-        "Envie XML ou ZIP"
-    )
+        st.info(
+            "Envie XML ou ZIP"
+        )
