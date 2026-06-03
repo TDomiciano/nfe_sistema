@@ -338,96 +338,90 @@ for arq in arquivos:
         tree = ET.parse(arq)
         root = tree.getroot()
 
-            # IGNORA EVENTOS
-            if root.find(
-                ".//nfe:infEvento",
-                ns
-            ) is not None:
+        # IGNORA EVENTOS
+        if root.find(".//nfe:infEvento", ns) is not None:
+            continue
 
-                continue
+        ide = root.find(".//nfe:ide", ns)
+        emit = root.find(".//nfe:emit", ns)
+        dest = root.find(".//nfe:dest", ns)
 
-            ide = root.find(".//nfe:ide", ns)
+        ender_emit = (
+            emit.find("nfe:enderEmit", ns)
+            if emit is not None
+            else None
+        )
 
-            emit = root.find(".//nfe:emit", ns)
+        ender_dest = (
+            dest.find("nfe:enderDest", ns)
+            if dest is not None
+            else None
+        )
 
-            dest = root.find(".//nfe:dest", ns)
+        uf_origem = get_text(
+            ender_emit,
+            "nfe:UF",
+            ns
+        )
 
-            ender_emit = (
-                emit.find("nfe:enderEmit", ns)
-                if emit is not None
-                else None
-            )
+        uf_destino = get_text(
+            ender_dest,
+            "nfe:UF",
+            ns
+        )
 
-            ender_dest = (
-                dest.find("nfe:enderDest", ns)
-                if dest is not None
-                else None
-            )
+        cnpj = get_text(
+            dest,
+            "nfe:CNPJ",
+            ns
+        )
 
-            uf_origem = get_text(
-                ender_emit,
-                "nfe:UF",
-                ns
-            )
+        cpf = get_text(
+            dest,
+            "nfe:CPF",
+            ns
+        )
 
-            uf_destino = get_text(
-                ender_dest,
-                "nfe:UF",
-                ns
-            )
+        documento = cnpj if cnpj else cpf
 
-            cnpj = get_text(
-                dest,
-                "nfe:CNPJ",
-                ns
-            )
+        tipo_cliente = (
+            "PJ"
+            if cnpj
+            else "PF"
+        )
 
-            cpf = get_text(
-                dest,
-                "nfe:CPF",
-                ns
-            )
+        ie_dest = ""
 
-            documento = cnpj if cnpj else cpf
+        if dest is not None:
 
-            tipo_cliente = (
-                "PJ"
-                if cnpj
-                else "PF"
-            )
-
-            ie_dest = ""
-
-            if dest is not None:
-
-                ie_tag = dest.find(
-                    ".//nfe:IE",
-                    ns
-                )
-
-                ie_dest = (
-                    ie_tag.text
-                    if ie_tag is not None
-                    else ""
-                )
-
-            # =========================
-            # CHAVE
-            # =========================
-            chave = ""
-
-            inf_nfe = root.find(
-                ".//nfe:infNFe",
+            ie_tag = dest.find(
+                ".//nfe:IE",
                 ns
             )
 
-            if inf_nfe is not None:
+            ie_dest = (
+                ie_tag.text
+                if ie_tag is not None
+                else ""
+            )
 
-                chave = (
-                    inf_nfe.attrib
-                    .get("Id", "")
-                    .replace("NFe", "")
-                )
+        # =========================
+        # CHAVE
+        # =========================
+        chave = ""
+
+        inf_nfe = root.find(
+            ".//nfe:infNFe",
+            ns
+        )
+
+        if inf_nfe is not None:
+
+            chave = (
+                inf_nfe.attrib
+                .get("Id", "")
+                .replace("NFe", "")
+            )
 
             # =========================
             # STATUS
