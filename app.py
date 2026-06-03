@@ -295,65 +295,63 @@ if arquivos:
     }
 
     # =========================
-    # BUSCA CANCELADAS
-    # =========================
-    for i, arq in enumerate(arquivos):
+# BUSCA CANCELADAS
+# =========================
+for i, arq in enumerate(arquivos):
 
-        try:
+    try:
 
-            arq.seek(0)
+        arq.seek(0)
 
-            tree = ET.parse(arq)
+        tree = ET.parse(arq)
 
-            root = tree.getroot()
+        root = tree.getroot()
 
-            xml_str = ET.tostring(
-                root,
-                encoding="unicode"
-            ).upper()
+        xml_str = ET.tostring(
+            root,
+            encoding="unicode"
+        ).upper()
 
-            if (
-                "CANCELAMENTO" in xml_str
-                and
-                "110111" in xml_str
-            ):
+        if (
+            "CANCELAMENTO" in xml_str
+            and
+            "110111" in xml_str
+        ):
 
-                chave_evento = ""
+            chave_evento = ""
 
-                ret_evento = root.find(
-                    ".//nfe:retEvento/nfe:infEvento",
+            ret_evento = root.find(
+                ".//nfe:retEvento/nfe:infEvento",
+                ns
+            )
+
+            if ret_evento is not None:
+
+                chave_evento = get_text(
+                    ret_evento,
+                    "nfe:chNFe",
                     ns
                 )
 
-                if ret_evento is not None:
+            if chave_evento == "":
 
-                    chave_evento = get_text(
-                        ret_evento,
-                        "nfe:chNFe",
-                        ns
-                    )
+                inf_evento = root.find(
+                    ".//nfe:infEvento",
+                    ns
+                )
 
-                if chave_evento == "":
+                chave_evento = get_text(
+                    inf_evento,
+                    "nfe:chNFe",
+                    ns
+                )
 
-                    inf_evento = root.find(
-                        ".//nfe:infEvento",
-                        ns
-                    )
+            if chave_evento != "":
 
-                    chave_evento = get_text(
-                        inf_evento,
-                        "nfe:chNFe",
-                        ns
-                    )
+                chaves_canceladas.add(chave_evento)
 
-                if chave_evento != "":
-
-                    chaves_canceladas.add(
-                        chave_evento
-                    )
-
-        except:
-            pass
+    except Exception as e:
+        pass
 
     # =========================
     # LOOP XMLS
