@@ -810,37 +810,38 @@ if arquivos:
                         valor_total *
                         obter_fcp(uf_destino)
                     )
-    difal_calc = calcular_difal_base_dupla(
-        valor_total,
-        aliq_inter=aliq_inter,
-        aliq_interna=aliq_interna
-    )
 
-    difal_diff = round(
-        difal_xml - difal_calc,
-        2
-    )
+                    difal_calc = calcular_difal_base_dupla(
+                        valor_total,
+                        aliq_inter=aliq_inter,
+                        aliq_interna=aliq_interna
+                    )
 
-    status_difal = (
-        "OK"
-        if abs(difal_diff) <= 0.01
-        else "DIVERGENTE"
-    )
+                    difal_diff = round(
+                        difal_xml - difal_calc,
+                        2
+                    )
 
-    if abs(difal_diff) > 0.01:
+                    status_difal = (
+                        "OK"
+                        if abs(difal_diff) <= 0.01
+                        else "DIVERGENTE"
+                    )
 
-        divergencias.append(
-            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
-        )
+                    if abs(difal_diff) > 0.01:
 
-else:
+                        divergencias.append(
+                            f"DIFAL divergente (XML {difal_xml} x Calc {difal_calc})"
+                        )
 
-    difal_calc = 0
-    difal_diff = 0
-    fcp_calc = 0
-    aliq_inter = 0
-    aliq_interna = 0
-    status_difal = "NÃO APLICÁVEL"
+                else:
+
+                    difal_calc = 0
+                    difal_diff = 0
+                    fcp_calc = 0
+                    aliq_inter = 0
+                    aliq_interna = 0
+                    status_difal = "NÃO APLICÁVEL"
 # =========================
 # DADOS
 # =========================
