@@ -1159,8 +1159,6 @@ if arquivos:
                     use_container_width=True
                 )
 
-                else:
+            else:
 
-                    st.info(
-                        "Envie XML ou ZIP"
-                    )
+                st.info("Envie XML ou ZIP")
