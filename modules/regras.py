@@ -6,13 +6,24 @@ def carregar_regras():
 
     regras = pd.read_excel(
         "conf_fiscais.xlsx",
+        sheet_name="Config Fiscal"
+    )
+
+    regras_st = pd.read_excel(
+        "conf_fiscais.xlsx",
         sheet_name="Config ST"
     )
 
-    regras_st = pd.read_excel (
-        "conf_fiscais.xlxs",
-        sheet_name="Config ST"
+    regras.columns = (
+        regras.columns
+        .str.strip()
+        .str.lower()
+    )
+
+    regras_st.columns = (
+        regras_st.columns
+        .str.strip()
+        .str.lower()
     )
 
     return regras, regras_st
-    

@@ -1,72 +1,63 @@
-import xml.etree.ElementTree as ET
-
-from modules.xml_utils import get_text
+import pandas as pd
 
 
-def localizar_canceladas(
-    arquivos,
-    ns
-):
+def verificar_quebras(df):
 
-    chaves_canceladas = set()
+    df_seq = df[
+        df["Status"].isin(
+            ["AUTORIZADA", "CANCELADA", "DENEGADA"]
+        )
+    ].copy()
 
-    for arq in arquivos:
+    df_seq["NF"] = pd.to_numeric(
+        df_seq["NF"],
+        errors="coerce"
+    )
 
-        try:
+    quebras = []
 
-            arq.seek(0)
+    for serie in df_seq["SERIE"].dropna().unique():
 
-            tree = ET.parse(arq)
+        notas = sorted(
+            df_seq[
+                df_seq["SERIE"] == serie
+            ]["NF"]
+            .dropna()
+            .astype(int)
+            .unique()
+        )
 
-            root = tree.getroot()
+        if len(notas) > 1:
 
-            xml_str = ET.tostring(
-                root,
-                encoding="unicode"
-            ).upper()
+            menor = min(notas)
+            maior = max(notas)
 
-            if (
-                "CANCELAMENTO" in xml_str
-                and
-                "110111" in xml_str
-            ):
+            todas = set(
+                range(menor, maior + 1)
+            )
 
-                chave_evento = ""
+            existentes = set(notas)
 
-                ret_evento = root.find(
-                    ".//nfe:retEvento/nfe:infEvento",
-                    ns
-                )
+            faltantes = sorted(
+                list(todas - existentes)
+            )
 
-                if ret_evento is not None:
+            if len(faltantes) > 0:
 
-                    chave_evento = get_text(
-                        ret_evento,
-                        "nfe:chNFe",
-                        ns
-                    )
+                quebras.append({
 
-                if chave_evento == "":
+                    "SERIE": serie,
+                    "Menor NF": menor,
+                    "Maior NF": maior,
+                    "Qtd Quebras": len(faltantes),
 
-                    inf_evento = root.find(
-                        ".//nfe:infEvento",
-                        ns
-                    )
+                    "Notas Faltantes":
+                        ", ".join(
+                            map(
+                                str,
+                                faltantes[:100]
+                            )
+                        )
+                })
 
-                    chave_evento = get_text(
-                        inf_evento,
-                        "nfe:chNFe",
-                        ns
-                    )
-
-                if chave_evento:
-
-                    chaves_canceladas.add(
-                        chave_evento
-                    )
-
-        except Exception:
-
-            pass
-
-    return chaves_canceladas
+    return pd.DataFrame(quebras)

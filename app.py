@@ -13,27 +13,113 @@ from modules.exportacao import gerar_excel
 # CONFIG
 # =========================
 st.set_page_config(
-    layout="wide",
-    page_title="Domiciano Auditor Fiscal"
+    page_title="Domiciano Auditor Fiscal",
+    page_icon="📊",
+    layout="wide"
 )
 
 # =========================
-# STATE (OBRIGATÓRIO)
+# CSS
+# =========================
+st.markdown("""
+<style>
+
+.block-container{
+    padding-top:1rem;
+    padding-left:2rem;
+    padding-right:2rem;
+}
+
+.metric-card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    text-align:center;
+    box-shadow:0 1px 5px rgba(0,0,0,0.08);
+}
+
+.metric-value{
+    font-size:32px;
+    font-weight:bold;
+}
+
+.metric-title{
+    color:#666;
+    font-size:14px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# =========================
+# SIDEBAR
+# =========================
+with st.sidebar:
+
+    st.image(
+        "logo.png",
+        width=80
+    )
+
+    st.markdown(
+        "### Domiciano Auditor Fiscal"
+    )
+
+    st.info("""
+Sistema para auditoria de:
+
+• NF-e
+
+• DIFAL
+
+• FCP
+
+• Quebra de sequência
+
+• Notas canceladas
+""")
+
+# =========================
+# CABEÇALHO
+# =========================
+col1, col2, col3 = st.columns([2, 1, 5])
+
+with col2:
+    st.image(
+        "logo.png",
+        width=140
+    )
+
+with col3:
+
+    st.title("🔎 Auditor Fiscal")
+
+    st.caption(
+        "Auditoria Fiscal de NF-e • DIFAL • FCP • Sequência Numérica"
+    )
+
+st.divider()
+
+# =========================
+# STATE
 # =========================
 if "upload_key" not in st.session_state:
     st.session_state.upload_key = 0
 
 # =========================
-# CONFIGS
+# CONFIGURAÇÕES
 # =========================
 regras, regras_st = carregar_regras()
+
 tabela_icms, tabela_fcp = carregar_aliquotas()
 
 # =========================
 # UPLOAD
 # =========================
+st.markdown("### 📂 Envie XML ou ZIP")
+
 uploads = st.file_uploader(
-    "Envie XML ou ZIP",
+    "",
     type=["xml", "zip"],
     accept_multiple_files=True,
     key=f"upload_xmls_{st.session_state.upload_key}"
@@ -46,17 +132,26 @@ if uploads:
     for upload in uploads:
 
         if upload.name.lower().endswith(".xml"):
+
             arquivos.append(upload)
 
         elif upload.name.lower().endswith(".zip"):
 
-            with zipfile.ZipFile(upload, "r") as zip_ref:
+            with zipfile.ZipFile(
+                upload,
+                "r"
+            ) as zip_ref:
+
                 for nome in zip_ref.namelist():
 
                     if nome.lower().endswith(".xml"):
 
-                        xml_file = io.BytesIO(zip_ref.read(nome))
+                        xml_file = io.BytesIO(
+                            zip_ref.read(nome)
+                        )
+
                         xml_file.name = nome
+
                         arquivos.append(xml_file)
 
 # =========================
@@ -72,90 +167,170 @@ if arquivos:
         tabela_fcp
     )
 
+    df_quebras = verificar_quebras(df)
+
+    df_canceladas = df[
+        df["Status"] == "CANCELADA"
+    ].copy()
+
     # =========================
-    # BOTÕES (LAYOUT ANTIGO)
+    # BOTÕES
     # =========================
     col1, col2 = st.columns([1, 1])
 
     with col1:
+
         if st.button("🔄 Nova Auditoria"):
+
             st.session_state.upload_key += 1
             st.rerun()
 
     with col2:
-        st.success(f"✅ {len(df)} registros encontrados")
+
+        st.success(
+            f"{len(df)} registros encontrados"
+        )
 
     st.divider()
 
     # =========================
-    # RESUMO
+    # CARDS
     # =========================
+    total_registros = len(df)
+
+    total_autorizadas = len(
+        df[df["Status"] == "AUTORIZADA"]
+    )
+
+    total_canceladas = len(
+        df[df["Status"] == "CANCELADA"]
+    )
+
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("Registros", len(df))
+    with col1:
+        st.metric(
+            "📄 Total de Registros",
+            total_registros
+        )
 
-    col2.metric(
-        "Canceladas",
-        len(df[df["Status"] == "CANCELADA"])
-    )
+    with col2:
+        st.metric(
+            "✅ Autorizadas",
+            total_autorizadas
+        )
 
-    df_quebras = verificar_quebras(df)
+    with col3:
+        st.metric(
+            "🚫 Canceladas",
+            total_canceladas
+        )
 
-    col3.metric(
-        "Quebras",
-        len(df_quebras) if not df_quebras.empty else 0
-    )
-
+    
     st.divider()
 
     # =========================
-    # AUDITORIA SEQUÊNCIA
+    # ABAS
     # =========================
-    st.subheader("🔎 Auditoria Sequência NF")
-
-    if not df_quebras.empty:
-        st.warning("⚠️ Quebras encontradas")
-        st.dataframe(df_quebras, use_container_width=True)
-    else:
-        st.success("✅ Nenhuma quebra encontrada")
-
-    st.divider()
+    tab1, tab2, tab3 = st.tabs([
+        "📊 Auditoria",
+        "🔎 Sequência",
+        "📥 Exportação"
+    ])
 
     # =========================
-    # CANCELADAS
+    # ABA AUDITORIA
     # =========================
-    st.subheader("🚫 NF Canceladas")
+    with tab1:
 
-    df_canceladas = df[df["Status"] == "CANCELADA"].copy()
+        st.markdown("### 🔍 Filtros")
 
-    if not df_canceladas.empty:
-        st.dataframe(df_canceladas, use_container_width=True)
-    else:
-        st.success("✅ Nenhuma NF cancelada")
+        col1, col2 = st.columns(2)
 
-    st.divider()
+        with col1:
+
+            status_filtro = st.multiselect(
+                "Status",
+                options=sorted(
+                    df["Status"].unique()
+                ),
+                default=sorted(
+                    df["Status"].unique()
+                )
+            )
+
+        with col2:
+
+            uf_filtro = st.multiselect(
+                "UF Destino",
+                options=sorted(
+                    df["UF Destino"]
+                    .dropna()
+                    .unique()
+                ),
+                default=sorted(
+                    df["UF Destino"]
+                    .dropna()
+                    .unique()
+                )
+            )
+
+        df_filtrado = df[
+            (df["Status"].isin(status_filtro))
+            &
+            (df["UF Destino"].isin(uf_filtro))
+        ]
+
+        st.divider()
+
+        st.dataframe(
+            df_filtrado,
+            use_container_width=True,
+            hide_index=True
+        )
 
     # =========================
-    # DOWNLOAD
+    # ABA SEQUÊNCIA
     # =========================
-    output = gerar_excel(df, df_quebras, df_canceladas)
+    with tab2:
 
-    st.download_button(
-        "⬇️ Baixar Excel",
-        output,
-        file_name="auditoria_fiscal.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+        if not df_quebras.empty:
 
-    st.divider()
+            st.warning(
+                "⚠️ Quebras encontradas"
+            )
+
+            st.dataframe(
+                df_quebras,
+                use_container_width=True
+            )
+
+        else:
+
+            st.success(
+                "✅ Nenhuma quebra encontrada"
+            )
 
     # =========================
-    # TABELA PRINCIPAL
+    # ABA EXPORTAÇÃO
     # =========================
-    st.subheader("📊 Auditoria Fiscal")
+    with tab3:
 
-    st.dataframe(df, use_container_width=True)
+        output = gerar_excel(
+            df,
+            df_quebras,
+            df_canceladas
+        )
+
+        st.download_button(
+            "⬇️ Baixar Excel",
+            output,
+            file_name="auditoria_fiscal.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
 else:
 
-    st.info("Envie XML ou ZIP")
+    st.info(
+        "Envie XML ou ZIP para iniciar a auditoria."
+    )

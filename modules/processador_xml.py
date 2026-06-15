@@ -22,8 +22,10 @@ def processar_xmls(
     dados = []
 
     chaves_canceladas = localizar_canceladas(
-        arquivos
+        arquivos,
+        NS
     )
+    print("CHAVES CANCELADAS:", chaves_canceladas)
 
     for arq in arquivos:
 
@@ -47,6 +49,15 @@ def processar_xmls(
                 NS
             )
 
+            emissao = get_text(
+                ide,
+                "nfe:dhEmi",
+                NS
+            )
+
+            if emissao:
+                emissao = emissao[:10]
+            
             emit = root.find(
                 ".//nfe:emit",
                 NS
@@ -122,6 +133,12 @@ def processar_xmls(
                     else ""
                 )
 
+            pj_com_ie = (
+                cnpj
+                and str(ie_dest).strip()
+                and str(ie_dest).upper() != "ISENTO"
+            )
+
             chave = ""
 
             inf_nfe = root.find(
@@ -130,18 +147,23 @@ def processar_xmls(
             )
 
             if inf_nfe is not None:
-
+                
                 chave = (
                     inf_nfe.attrib
                     .get("Id", "")
                     .replace("NFe", "")
                 )
+                
+                print("CHAVE NF:", repr(chave))
 
             status = "AUTORIZADA"
 
             if chave in chaves_canceladas:
 
                 status = "CANCELADA"
+
+            print("STATUS:", status)
+            print("CHAVE EXISTE:", chave in chaves_canceladas)
 
             itens = root.findall(
                 ".//nfe:det",
@@ -169,6 +191,22 @@ def processar_xmls(
                     else None
                 )
 
+                cst_icms = ""
+                
+                for tag in [
+                    "nfe:CST",
+                    "nfe:CSOSN"
+                ]:
+                    valor = get_text(
+                        icms,
+                        tag,
+                        NS
+                    )
+
+                    if valor:
+                        cst_icms = valor
+                        break
+
                 icms_ufdest = (
                     imposto.find(
                         ".//nfe:ICMSUFDest",
@@ -178,9 +216,94 @@ def processar_xmls(
                     else None
                 )
 
+                aliquota_icms = float(
+                    get_text(
+                        icms,
+                        "nfe:pICMS",
+                        NS
+                    ) or 0
+                )
+                
+                base_icms = float(
+                    get_text(
+                        icms,
+                        "nfe:vBC",
+                        NS
+                    ) or 0
+                )
+                
+                valor_icms = float(
+                    get_text(
+                        icms,
+                        "nfe:vICMS",
+                        NS
+                    ) or 0
+                )
+
+                pis = item.find(
+                    ".//nfe:PIS/*",
+                    NS
+                )
+                
+                valor_pis = float(
+                    get_text(
+                        pis,
+                        "nfe:vPIS",
+                        NS
+                    ) or 0
+                )
+                
+                cst_pis = get_text(
+                    pis,
+                    "nfe:CST",
+                    NS
+                )
+                
+                cofins = item.find(
+                    ".//nfe:COFINS/*",
+                    NS
+                )
+                
+                valor_cofins = float(
+                    get_text(
+                        cofins,
+                        "nfe:vCOFINS",
+                        NS
+                    ) or 0
+                )
+                
+                cst_cofins = get_text(
+                    cofins,
+                    "nfe:CST",
+                    NS
+                )
+                
+                ibs = float(
+                    get_text(
+                        item,
+                        ".//nfe:vIBS",
+                        NS
+                    ) or 0
+                )
+
+                cbs = float(
+                    get_text(
+                        item,
+                        ".//nfe:vCBS",
+                        NS
+                    ) or 0
+                )
+                analise = ""
+
                 ncm = get_text(
                     prod,
                     "nfe:NCM",
+                    NS
+                )
+
+                codigo_produto = get_text(
+                    prod,
+                    "nfe:cProd",
                     NS
                 )
 
@@ -231,19 +354,120 @@ def processar_xmls(
                     uf_destino
                 )
 
-                fcp_calc = (
-                    valor_total *
-                    obter_fcp(
-                        tabela_fcp,
-                        uf_destino
-                    )
-                )
+                fcp_calc = 0
 
-                difal_calc = calcular_difal_base_dupla(
+                if uf_destino == "RJ":
+
+                    fcp_calc = (
+                        valor_total *
+                        obter_fcp(
+                            tabela_fcp,
+                            uf_destino
+                        )
+                    )
+
+                difal_calc = 0
+                
+                if (
+                    uf_origem != uf_destino
+                    and not pj_com_ie
+                ):
+                    difal_calc = calcular_difal_base_dupla(
                     valor_total,
                     aliq_inter,
                     aliq_interna
                 )
+                
+                # =========================
+                # VALIDAÇÃO REGRA FISCAL
+                # =========================
+                
+                analises = []
+                regra = regras[
+                    (regras["ncm"].astype(str) == str(ncm).strip())
+                    &
+                    (regras["origem"].astype(str).str.upper().str.strip()
+                    == str(uf_origem).upper().strip())
+                    &
+                    (regras["destino"].astype(str).str.upper().str.strip()
+                    == str(uf_destino).upper().strip())
+                ]
+
+                if regra.empty:
+                    
+                    analises.append(
+                        f"Sem regra cadastrada para {ncm} {uf_origem}->{uf_destino}"
+                    )
+                    
+                else:
+                    
+                    regra = regra.iloc[0]
+                    
+                    cfop_esperado = (
+                        str(regra["cfop_pj"])
+                        if pj_com_ie
+                        else str(regra["cfop_pf"])
+                    )
+                    
+                    if cfop_xml != cfop_esperado:
+                        
+                        analises.append(
+                            f"CFOP esperado {cfop_esperado}"
+                        )
+                        
+                    cst_esperado = (
+                        str(regra["cst_icms_pj"])
+                        if pj_com_ie
+                        else str(regra["cst_icms_pf"])
+                    )
+                    
+                    if str(cst_icms).zfill(2) != str(cst_esperado).zfill(2):
+                        
+                        analises.append(
+                            f"CST ICMS esperado {cst_esperado}"
+                        )
+                    
+                    if str(cst_pis).zfill(2) != str(regra["cst_pis"]).zfill(2):
+
+                        analises.append(
+                            "CST PIS divergente"
+                        )
+
+                    if str(cst_cofins).zfill(2) != str(regra["cst_cofins"]).zfill(2):
+                    
+                        analises.append(
+                            "CST COFINS divergente"
+                            )
+
+                    if (
+                        pj_com_ie
+                        and difal_xml > 0
+                    ):
+
+                        analises.append(
+                            "DIFAL destacado para contribuinte"
+                        )
+
+                    if (
+                        uf_origem != uf_destino
+                        and not pj_com_ie
+                        and difal_xml == 0
+                    ):
+
+                        analises.append(
+                            "DIFAL não destacado"
+                        )
+
+                # Resultado final
+                if analises:
+                    
+                    analise = " | ".join(
+                        analises
+                    )
+                
+                else:
+                                                           
+                    analise = "OK"
 
                 dados.append({
 
@@ -253,36 +477,62 @@ def processar_xmls(
                         NS
                     ),
 
-                    "Serie": get_text(
+                    "Status": status,
+
+                    "SERIE": get_text(
                         ide,
                         "nfe:serie",
                         NS
                     ),
 
-                    "Status": status,
-
-                    "Chave": chave,
-
                     "CPF/CNPJ": documento,
 
-                    "Produto": produto,
+                    "IE DESTINO": ie_dest,
 
-                    "NCM": ncm,
-
-                    "CFOP": cfop_xml,
+                    "EMISSÃO": emissao,
 
                     "UF Origem": uf_origem,
 
                     "UF Destino": uf_destino,
 
-                    "Valor Produto Total": valor_total,
+                    "CÓDIGO DO PRODUTO": codigo_produto,
+
+                    "PRODUTO": produto,
+
+                    "VALOR DO PRODUTO": valor_total,
+
+                    "CFOP": cfop_xml,
+
+                    "NCM": ncm,
+
+                    "CST ICMS": cst_icms,
+
+                    "ALIQUOTA ICMS": aliquota_icms,
+
+                    "ICMS": valor_icms,
 
                     "DIFAL XML": difal_xml,
 
-                    "DIFAL Calculado": difal_calc,
+                    "DIFAL CALCULADO": difal_calc,
 
                     "FCP XML": fcp_xml,
 
+                    "PIS": valor_pis,
+
+                    "CST PIS": cst_pis,
+
+                    "COFINS": valor_cofins,
+
+                    "CST COFINS": cst_cofins,
+                    
+                    "IBS": ibs,
+
+                    "CBS": cbs,
+
+                    "ANALISE": analise,
+
+                    "Chave": chave,
+                    
                     "FCP Calculado": round(
                         fcp_calc,
                         2
@@ -290,8 +540,10 @@ def processar_xmls(
 
                 })
 
-        except Exception:
+        except Exception as e:
 
-            continue
+            print(f"ERRO NO XML: {e}")
+
+            raise
 
     return pd.DataFrame(dados)

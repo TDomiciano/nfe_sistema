@@ -1,72 +1,44 @@
 import xml.etree.ElementTree as ET
-
 from modules.xml_utils import get_text
 
 
-def localizar_canceladas(
-    arquivos,
-    ns
-):
+def localizar_canceladas(arquivos, ns):
 
     chaves_canceladas = set()
 
     for arq in arquivos:
 
         try:
-
             arq.seek(0)
-
             tree = ET.parse(arq)
-
             root = tree.getroot()
 
-            xml_str = ET.tostring(
-                root,
-                encoding="unicode"
-            ).upper()
+            inf_evento = root.find(".//nfe:infEvento", ns)
 
-            if (
-                "CANCELAMENTO" in xml_str
-                and
-                "110111" in xml_str
-            ):
+            if inf_evento is None:
+                continue
 
-                chave_evento = ""
+            tp_evento = (
+                get_text(inf_evento, "nfe:tpEvento", ns) or ""
+            ).strip()
 
-                ret_evento = root.find(
-                    ".//nfe:retEvento/nfe:infEvento",
-                    ns
-                )
+            chave = (
+                get_text(inf_evento, "nfe:chNFe", ns) or ""
+            ).strip()
 
-                if ret_evento is not None:
+            print("TP EVENTO:", tp_evento)
+            print("CHAVE EVENTO:", chave)
 
-                    chave_evento = get_text(
-                        ret_evento,
-                        "nfe:chNFe",
-                        ns
-                    )
+            if tp_evento == "110111" and chave:
 
-                if chave_evento == "":
+                print("ADICIONOU CANCELADA:", chave)
 
-                    inf_evento = root.find(
-                        ".//nfe:infEvento",
-                        ns
-                    )
+                chaves_canceladas.add(chave)
 
-                    chave_evento = get_text(
-                        inf_evento,
-                        "nfe:chNFe",
-                        ns
-                    )
+        except Exception as e:
 
-                if chave_evento:
+            print("ERRO CANCELADAS:", e)
 
-                    chaves_canceladas.add(
-                        chave_evento
-                    )
-
-        except Exception:
-
-            pass
+    print("SET FINAL:", chaves_canceladas)
 
     return chaves_canceladas

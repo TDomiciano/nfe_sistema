@@ -1,79 +1,120 @@
+import io
 import pandas as pd
+from openpyxl.styles import Font
 
 
-def verificar_quebras(df):
+def gerar_excel(
+    df,
+    df_quebras,
+    df_canceladas
+):
 
-    df_seq = df[
-        df["Status"].isin(
-            [
-                "AUTORIZADA",
-                "CANCELADA",
-                "DENEGADA"
-            ]
+    output = io.BytesIO()
+
+    with pd.ExcelWriter(
+        output,
+        engine="openpyxl"
+    ) as writer:
+
+        # =========================
+        # AUDITORIA FISCAL
+        # =========================
+        colunas_auditoria = [
+
+            "NF",
+            "SERIE",
+            "CPF/CNPJ",
+            "IE DESTINO",
+            "EMISSÃO",
+            "CÓDIGO DO PRODUTO",
+            "PRODUTO",
+            "VALOR DO PRODUTO",
+            "CFOP",
+            "NCM",
+            "CST ICMS",
+            "ALIQUOTA ICMS",
+            "BASE CALCULO DE ICMS",
+            "ICMS",
+            "DIFAL XML",
+            "DIFAL CALCULADO",
+            "PIS",
+            "CST PIS",
+            "COFINS",
+            "CST COFINS",
+            "IBS",
+            "CBS",
+            "ANALISE"
+
+        ]
+
+        df_exportar = df[
+            [c for c in colunas_auditoria if c in df.columns]
+        ]
+
+        df_exportar.to_excel(
+            writer,
+            index=False,
+            sheet_name="Auditoria Fiscal"
         )
-    ].copy()
 
-    df_seq["NF"] = pd.to_numeric(
-        df_seq["NF"],
-        errors="coerce"
-    )
+        # =========================
+        # QUEBRAS
+        # =========================
+        if not df_quebras.empty:
 
-    quebras = []
-
-    for serie in df_seq["Serie"].dropna().unique():
-
-        notas = sorted(
-            df_seq[
-                df_seq["Serie"] == serie
-            ]["NF"]
-            .dropna()
-            .astype(int)
-            .unique()
-        )
-
-        if len(notas) > 1:
-
-            menor = min(notas)
-            maior = max(notas)
-
-            todas = set(
-                range(
-                    menor,
-                    maior + 1
-                )
+            df_quebras.to_excel(
+                writer,
+                index=False,
+                sheet_name="Quebra Sequencia"
             )
 
-            existentes = set(notas)
+        # =========================
+        # CANCELADAS
+        # =========================
+        if not df_canceladas.empty:
 
-            faltantes = sorted(
-                list(
-                    todas - existentes
-                )
+            df_canceladas.to_excel(
+                writer,
+                index=False,
+                sheet_name="NF Canceladas"
             )
 
-            if len(faltantes) > 0:
+        # =========================
+        # FORMATAÇÃO
+        # =========================
+        workbook = writer.book
 
-                quebras.append({
+        for aba in workbook.worksheets:
 
-                    "Serie": serie,
+            # Congela cabeçalho
+            aba.freeze_panes = "A2"
 
-                    "Menor NF": menor,
+            # Filtro
+            aba.auto_filter.ref = aba.dimensions
 
-                    "Maior NF": maior,
+            # Cabeçalho em negrito
+            for cell in aba[1]:
+                cell.font = Font(
+                    bold=True
+                )
 
-                    "Qtd Quebras": len(
-                        faltantes
-                    ),
+            # Ajusta largura
+            for coluna in aba.columns:
 
-                    "Notas Faltantes":
-                        ", ".join(
-                            map(
-                                str,
-                                faltantes[:100]
-                            )
-                        )
-                })
+                tamanho = max(
+                    len(str(cell.value))
+                    if cell.value is not None
+                    else 0
+                    for cell in coluna
+                )
 
-    return pd.DataFrame(
-        quebras
-    )
+                aba.column_dimensions[
+                    coluna[0].column_letter
+                ].width = min(
+                    tamanho + 3,
+                    50
+                )
+
+    output.seek(0)
+
+    return output
