@@ -19,6 +19,14 @@ def gerar_excel(
         # =========================
         # AUDITORIA FISCAL
         # =========================
+        if "Status" in df.columns:
+            df = df[
+                df["Status"]
+                .astype(str)
+                .str.upper()
+                .eq("AUTORIZADA")
+            ].copy()      
+
         colunas_auditoria = [
 
             "NF",
@@ -41,6 +49,7 @@ def gerar_excel(
             "CST PIS",
             "COFINS",
             "CST COFINS",
+            "FCP",
             "IBS",
             "CBS",
             "ANALISE"
