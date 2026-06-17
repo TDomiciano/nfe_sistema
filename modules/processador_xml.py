@@ -86,17 +86,17 @@ def processar_xmls(
                 else None
             )
 
-            uf_origem = get_text(
-                ender_emit,
-                "nfe:UF",
-                NS
-            )
+            uf_origem = ""
+            uf_destino = ""
 
-            uf_destino = get_text(
-                ender_dest,
-                "nfe:UF",
-                NS
-            )
+            if ender_emit is not None:
+                uf_origem = get_text(ender_emit, "nfe:UF", NS) or ""
+
+            if ender_dest is not None:
+                uf_destino = get_text(ender_dest, "nfe:UF", NS) or ""
+            
+            if not uf_origem or not uf_destino:
+                continue
 
             cnpj = get_text(
                 dest,
