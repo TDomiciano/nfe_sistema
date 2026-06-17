@@ -354,31 +354,13 @@ def processar_xmls(
                     uf_destino
                 )
 
-                fcp_calc = 0
-
-                if icms_ufdest is not None:
-
-                    base_fcp = (
-                        (
-                            (base_icms if base_icms > 0 else valor_total)
-                            -
-                            (
-                                (base_icms if base_icms > 0 else valor_total)
-                                * aliq_inter
-                            )
-                        )
-                        /
-                        (1 - aliq_inter)
-                    )
-
-                    fcp_calc = round(
-                        base_fcp *
-                        obter_fcp(
-                            tabela_fcp,
-                            uf_destino
-                        ),
-                        2
-                    )
+                aliq_fcp = obter_fcp(tabela_fcp, uf_destino) or 0
+                
+                if uf_destino == "RJ" and aliq_fcp > 0:
+                    base = base_icms if base_icms > 0 else valor_total
+                    fcp_calc = round(base * aliq_fcp, 2)
+                else:
+                    fcp_calc = 0
 
                 difal_calc = 0
                 
