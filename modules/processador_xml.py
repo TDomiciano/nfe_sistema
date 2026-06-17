@@ -361,6 +361,17 @@ def processar_xmls(
                 
                 fcp_calc = round(vbc_fcp * (aliq_fcp / 100), 2)
 
+                aliq_inter = obter_aliquota_interestadual(
+                    tabela_icms,
+                    uf_origem,
+                    uf_destino
+                )
+                
+                aliq_interna = obter_aliquota_interna(
+                    tabela_icms,
+                    uf_destino
+                )
+
                 difal_calc = 0
                 
                 if (
