@@ -356,14 +356,28 @@ def processar_xmls(
 
                 fcp_calc = 0
 
-                if uf_destino == "RJ":
+                if icms_ufdest is not None:
 
-                    fcp_calc = (
-                        valor_total *
+                    base_fcp = (
+                        (
+                            (base_icms if base_icms > 0 else valor_total)
+                            -
+                            (
+                                (base_icms if base_icms > 0 else valor_total)
+                                * aliq_inter
+                            )
+                        )
+                        /
+                        (1 - aliq_inter)
+                    )
+
+                    fcp_calc = round(
+                        base_fcp *
                         obter_fcp(
                             tabela_fcp,
                             uf_destino
-                        )
+                        ),
+                        2
                     )
 
                 difal_calc = 0
@@ -373,7 +387,7 @@ def processar_xmls(
                     and not pj_com_ie
                 ):
                     difal_calc = calcular_difal_base_dupla(
-                    valor_total,
+                    base_icms if base_icms > 0 else valor_total,
                     aliq_inter,
                     aliq_interna
                 )

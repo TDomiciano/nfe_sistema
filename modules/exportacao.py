@@ -34,6 +34,8 @@ def gerar_excel(
             "CPF/CNPJ",
             "IE DESTINO",
             "EMISSÃO",
+            "UF Origem",
+            "UF Destino",
             "CÓDIGO DO PRODUTO",
             "PRODUTO",
             "VALOR DO PRODUTO",
@@ -49,10 +51,12 @@ def gerar_excel(
             "CST PIS",
             "COFINS",
             "CST COFINS",
-            "FCP",
+            "FCP XML",
+            "FCP Calculado",
             "IBS",
             "CBS",
             "ANALISE"
+            
 
         ]
 
