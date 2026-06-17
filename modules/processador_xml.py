@@ -342,25 +342,24 @@ def processar_xmls(
                         NS
                     ) or 0
                 )
-
-                aliq_inter = obter_aliquota_interestadual(
-                    tabela_icms,
-                    uf_origem,
-                    uf_destino
-                )
-
-                aliq_interna = obter_aliquota_interna(
-                    tabela_icms,
-                    uf_destino
-                )
-
-                aliq_fcp = obter_fcp(tabela_fcp, uf_destino) or 0
                 
-                if uf_destino == "RJ" and aliq_fcp > 0:
-                    base = base_icms if base_icms > 0 else valor_total
-                    fcp_calc = round(base * aliq_fcp, 2)
-                else:
-                    fcp_calc = 0
+                vbc_fcp = float(
+                    get_text(
+                        icms_ufdest,
+                        "nfe:vBCFCPUFDest",
+                        NS
+                    ) or 0
+                )
+                
+                aliq_fcp = float(
+                    get_text(
+                        icms_ufdest,
+                        "nfe:pFCPUFDest",
+                        NS
+                    ) or 0
+                )
+                
+                fcp_calc = round(vbc_fcp * (aliq_fcp / 100), 2)
 
                 difal_calc = 0
                 
