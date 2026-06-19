@@ -372,6 +372,11 @@ def processar_xmls(
                     uf_destino
                 )
 
+                aliq_fcp_tabela = obter_fcp(
+                    tabela_fcp,
+                    uf_destino
+                ) or 0
+
                 difal_calc = 0
                 
                 if (
@@ -381,7 +386,8 @@ def processar_xmls(
                     difal_calc = calcular_difal_base_dupla(
                     base_icms if base_icms > 0 else valor_total,
                     aliq_inter,
-                    aliq_interna
+                    aliq_interna,
+                    aliq_fcp_tabela
                 )
                 
                 # =========================
