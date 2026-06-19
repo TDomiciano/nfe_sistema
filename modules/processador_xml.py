@@ -409,6 +409,19 @@ def processar_xmls(
                     
                     regra = regra.iloc[0]
                     
+                    print("================================")
+                    print("NF:", get_text(ide, "nfe:nNF", NS))
+                    print("NCM:", ncm)
+                    print("UF:", uf_origem, "->", uf_destino)
+                    print("PJ_COM_IE:", pj_com_ie)
+                    print("CST XML:", cst_icms)
+                    print("CFOP XML:", cfop_xml)
+                    print("CFOP PF:", regra["cfop_pf"])
+                    print("CST PF:", regra["cst_icms_pf"])
+                    print("CFOP PJ:", regra["cfop_pj"])
+                    print("CST PJ:", regra["cst_icms_pj"])
+                    print("================================")
+
                     cfop_esperado = (
                         str(regra["cfop_pj"])
                         if pj_com_ie
@@ -462,6 +475,20 @@ def processar_xmls(
 
                         analises.append(
                             "DIFAL não destacado"
+                        )
+                    
+                    if (
+                        uf_origem != uf_destino
+                        and not pj_com_ie
+                        and abs(difal_xml - difal_calc) > 0.01
+                    ):
+                        analises.append(
+                            f"DIFAL divergente (XML {difal_xml:.2f} x Calc {difal_calc:.2f})"
+                        )
+
+                    if abs(fcp_xml - fcp_calc) > 0.01:
+                        analises.append(
+                            f"FCP divergente (XML {fcp_xml:.2f} x Calc {fcp_calc:.2f})"
                         )
 
                 # Resultado final
