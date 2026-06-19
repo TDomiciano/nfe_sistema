@@ -196,22 +196,24 @@ if arquivos:
     # =========================
     # CARDS
     # =========================
-    total_registros = len(df)
+    total_notas = df["Chave"].nunique()
 
-    total_autorizadas = len(
-        df[df["Status"] == "AUTORIZADA"]
+    total_autorizadas = (
+        df[df["Status"] == "AUTORIZADA"]["Chave"]
+        .nunique()
     )
 
-    total_canceladas = len(
-        df[df["Status"] == "CANCELADA"]
+    total_canceladas = (
+        df[df["Status"] == "CANCELADA"]["Chave"]
+        .nunique()
     )
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
         st.metric(
-            "📄 Total de Registros",
-            total_registros
+            "📄 Total de Notas",
+            total_notas
         )
 
     with col2:
