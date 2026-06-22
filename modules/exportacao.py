@@ -61,9 +61,14 @@ def gerar_excel(
 
         ]
 
-        df_exportar = df[
-            [c for c in colunas_auditoria if c in df.columns]
-        ]
+        df.columns = df.columns.str.strip()
+
+        faltando = [c for c in colunas_auditoria if c not in df.columns]
+
+        if faltando:
+            st.warning(f"Colunas ausentes: {faltando}")
+
+        df_exportar = df.reindex(columns=colunas_auditoria)
 
         df_exportar.to_excel(
             writer,
