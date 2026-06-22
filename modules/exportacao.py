@@ -43,7 +43,7 @@ def gerar_excel(
             "NCM",
             "CST ICMS",
             "ALIQUOTA ICMS",
-            "BASE CALCULO DE ICMS",
+            "BASE ICMS",
             "ICMS",
             "DIFAL XML",
             "DIFAL CALCULADO",
@@ -55,7 +55,8 @@ def gerar_excel(
             "FCP Calculado",
             "IBS",
             "CBS",
-            "ANALISE"
+            "ANALISE",
+            "CHAVE"
             
 
         ]
