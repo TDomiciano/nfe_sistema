@@ -313,7 +313,7 @@ def processar_xmls(
                     NS
                 )
 
-                cfop_devolucao = {
+                eh_devolucao = cfop_xml in {
                     "1202",
                     "1411",
                     "2202",
@@ -413,12 +413,14 @@ def processar_xmls(
                 
                 analises = []
 
-                if cfop_xml in {
+                eh_devolucao = cfop_xml in {
                     "1202",
                     "1411",
                     "2202",
                     "2411"
                 }:
+
+                if eh_devolucao:
                     analises.append("Operação de devolução")
 
                 regra = regras[
