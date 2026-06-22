@@ -566,6 +566,8 @@ def processar_xmls(
 
                     "ALIQUOTA ICMS": aliquota_icms,
 
+                    "BASE ICMS": base_icms,
+
                     "ICMS": valor_icms,
 
                     "DIFAL XML": difal_xml,
