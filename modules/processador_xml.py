@@ -320,6 +320,8 @@ def processar_xmls(
                     "2411"
                 }
 
+                eh_devolucao = cfop_xml in cfops_devolucao
+
                 produto = get_text(
                     prod,
                     "nfe:xProd",
@@ -458,7 +460,7 @@ def processar_xmls(
                         else str(regra["cfop_pf"])
                     )
                     
-                    if cfop_xml != cfop_esperado:
+                    if (not eh_devolucao) and cfop_xml != cfop_esperado:
                         
                         analises.append(
                             f"CFOP esperado {cfop_esperado}"
