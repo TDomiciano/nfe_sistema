@@ -590,7 +590,7 @@ def processar_xmls(
 
                     "ANALISE": analise,
 
-                    "Chave": chave,
+                    "CHAVE": chave,
                     
                     "FCP Calculado": round(
                         fcp_calc,
