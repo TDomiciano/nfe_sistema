@@ -56,7 +56,7 @@ def gerar_excel(
             "IBS",
             "CBS",
             "ANALISE",
-            "CHAVE"
+            "Chave"
             
 
         ]
