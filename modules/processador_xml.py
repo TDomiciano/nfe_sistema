@@ -327,6 +327,14 @@ def processar_xmls(
                     ) or 0
                 )
 
+                quantidade = float(
+                    get_text(
+                        prod,
+                        "nfe:qCom",
+                        NS
+                    ) or 0
+                )
+
                 difal_xml = float(
                     get_text(
                         icms_ufdest,
@@ -495,6 +503,16 @@ def processar_xmls(
                     if abs(fcp_xml - fcp_calc) > 0.01:
                         analises.append(
                             f"FCP divergente (XML {fcp_xml:.2f} x Calc {fcp_calc:.2f})"
+                        )
+                    
+                    if quantidade <= 0:
+                        analises.append(
+                            "Quantidade zerada"
+                        )
+
+                    if valor_total <= 0:
+                        analises.append(
+                            "Valor do produto zerado"
                         )
 
                 # Resultado final
