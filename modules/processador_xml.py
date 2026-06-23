@@ -336,6 +336,13 @@ def processar_xmls(
                     or eh_devolucao_compra
                 )
 
+                cst_st = str(cst_icms).zfill(2) in {
+                    "10",
+                    "30",
+                    "60",
+                    "70"
+                }
+
                 produto = get_text(
                     prod,
                     "nfe:xProd",
@@ -413,6 +420,7 @@ def processar_xmls(
                 if (
                     uf_origem != uf_destino
                     and not pj_com_ie
+                    and not cst_st
                 ):
                     difal_calc = calcular_difal_base_dupla(
                     base_icms if base_icms > 0 else valor_total,
@@ -558,6 +566,7 @@ def processar_xmls(
                     if (
                         uf_origem != uf_destino
                         and not pj_com_ie
+                        and not cst_st
                         and abs(difal_xml - difal_calc) > 0.01
                     ):
                         analises.append(
