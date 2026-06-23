@@ -313,14 +313,16 @@ def processar_xmls(
                     NS
                 )
 
-                cfops_entrada = {
+                cfops_devolucao = {
                     "1101", "1102", "1113", "1116",
                     "1201", "1202",
                     "2101", "2102", "2113", "2116",
-                    "2201", "2202"
+                    "2201", "2202",
+                    "5202", "5411", "6202", "6411"
+
                 }
 
-                eh_entrada = cfop_xml in cfops_entrada
+                eh_devolucao = cfop_xml in cfops_devolucao
 
                 produto = get_text(
                     prod,
@@ -413,17 +415,23 @@ def processar_xmls(
                 
                 analises = []
 
-                eh_devolucao = cfop_xml in {
+                cfips_devolucao = {
                     "1202",
                     "1411",
                     "2202",
-                    "2411"
+                    "2411",
+                    "5202",
+                    "5411",
+                    "6202",
+                    "6411"
                 }
+
+                eh_devolucao = cfop_xml in cfops_devolucao
 
                 cfops_entrada = {
                     "1101","1102","1113","1116",
                     "1201","1202",
-                    "2101","2102","2113","2116"
+                    "2101","2102","2113","2116",
                     "2201","2202"
                 }
 
