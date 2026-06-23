@@ -313,16 +313,28 @@ def processar_xmls(
                     NS
                 )
 
-                cfops_devolucao = {
-                    "1101", "1102", "1113", "1116",
-                    "1201", "1202",
-                    "2101", "2102", "2113", "2116",
-                    "2201", "2202",
-                    "5202", "5411", "6202", "6411"
+                cfops_devolucao_venda = {
+                    "1202",
+                    "1411",
+                    "2202",
+                    "2411"
 
                 }
 
-                eh_devolucao = cfop_xml in cfops_devolucao
+                cfops_devolucao_compra = {
+                    "5202",
+                    "5411",
+                    "6202",
+                    "6411"
+                }
+
+                eh_devolucao_venda = cfop_xml in cfops_devolucao_venda
+                eh_devolucao_compra = cfop_xml in cfops_devolucao_compra
+
+                eh_devolucao = (
+                    eh_devolucao_venda
+                    or eh_devolucao_compra
+                )
 
                 produto = get_text(
                     prod,
@@ -500,32 +512,29 @@ def processar_xmls(
                     cst_pis_ok = str(cst_pis).zfill(2)
                     cst_cofins_ok = str(cst_cofins).zfill(2)
 
-                    if not eh_devolucao:
-                        
-                        if eh_entrada:
+                    if eh_devolucao_venda:
 
-                            cst_pis_validos = {"49", "98"}
-                            cst_cofins_validos = {"49", "98"}
+                        if cst_pis_ok != "98":
+                            analises.append("CST PIS esperado 98")
 
-                            if (
-                                cst_pis_ok not in cst_pis_validos
-                                and cst_pis_ok != str(regra["cst_pis"]).zfill(2)
-                            ):
-                                analises.append("CST PIS divergente")
+                        if cst_cofins_ok != "98":
+                            analises.append("CST COFINS esperado 98")
 
-                            if (
-                                cst_cofins_ok not in cst_cofins_validos
-                                and cst_cofins_ok != str(regra["cst_cofins"]).zfill(2)
-                            ):
-                                analises.append("CST COFINS divergente")
+                    elif eh_devolucao_compra:
 
-                        else:
+                        if cst_pis_ok != "49":
+                            analises.append("CST PIS esperado 49")
 
-                            if cst_pis_ok != str(regra["cst_pis"]).zfill(2):
-                                analises.append("CST PIS divergente")
+                        if cst_cofins_ok != "49":
+                            analises.append("CST COFINS esperado 49")
 
-                            if cst_cofins_ok != str(regra["cst_cofins"]).zfill(2):
-                                analises.append("CST COFINS divergente")
+                    else:
+
+                        if cst_pis_ok != str(regra["cst_pis"]).zfill(2):
+                            analises.append("CST PIS divergente")
+
+                        if cst_cofins_ok != str(regra["cst_cofins"]).zfill(2):
+                            analises.append("CST COFINS divergente")
 
                     if (
                         pj_com_ie
