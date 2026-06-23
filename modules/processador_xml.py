@@ -492,27 +492,32 @@ def processar_xmls(
                     cst_pis_ok = str(cst_pis).zfill(2)
                     cst_cofins_ok = str(cst_cofins).zfill(2)
 
-                    if eh_devolucao:
-                        pass
-                    else:
-
+                    if not eh_devolucao:
+                        
                         if eh_entrada:
+
                             cst_pis_validos = {"49", "98"}
                             cst_cofins_validos = {"49", "98"}
 
-                            if cst_pis_ok not in cst_pis_validos and cst_pis_ok != str(regra["cst_pis"]).zfill(2):
+                            if (
+                                cst_pis_ok not in cst_pis_validos
+                                and cst_pis_ok != str(regra["cst_pis"]).zfill(2)
+                            ):
                                 analises.append("CST PIS divergente")
 
-                            if cst_cofins_ok not in cst_cofins_validos and cst_cofins_ok != str(regra["cst_cofins"]).zfill(2):
+                            if (
+                                cst_cofins_ok not in cst_cofins_validos
+                                and cst_cofins_ok != str(regra["cst_cofins"]).zfill(2)
+                            ):
                                 analises.append("CST COFINS divergente")
 
-                    else:
+                        else:
 
-                        if cst_pis_ok != str(regra["cst_pis"]).zfill(2):
-                            analises.append("CST PIS divergente")
-                        
-                        if cst_cofins_ok != str(regra["cst_cofins"]).zfill(2):
-                            analises.append("CST COFINS divergente")
+                            if cst_pis_ok != str(regra["cst_pis"]).zfill(2):
+                                analises.append("CST PIS divergente")
+
+                            if cst_cofins_ok != str(regra["cst_cofins"]).zfill(2):
+                                analises.append("CST COFINS divergente")
 
                     if (
                         pj_com_ie
