@@ -427,7 +427,7 @@ def processar_xmls(
                 
                 analises = []
 
-                cfips_devolucao = {
+                cfops_devolucao = {
                     "1202",
                     "1411",
                     "2202",
