@@ -313,14 +313,14 @@ def processar_xmls(
                     NS
                 )
 
-                cfops_devolucao = {
-                    "1202",
-                    "1411",
-                    "2202",
-                    "2411"
+                cfops_entrada = {
+                    "1101", "1102", "1113", "1116",
+                    "1201", "1202",
+                    "2101", "2102", "2113", "2116",
+                    "2201", "2202"
                 }
 
-                eh_devolucao = cfop_xml in cfops_devolucao
+                eh_entrada = cfop_xml in cfops_entrada
 
                 produto = get_text(
                     prod,
@@ -420,6 +420,15 @@ def processar_xmls(
                     "2411"
                 }
 
+                cfops_entrada = {
+                    "1101","1102","1113","1116",
+                    "1201","1202",
+                    "2101","2102","2113","2116"
+                    "2201","2202"
+                }
+
+                eh_entrada = cfop_xml in cfops_entrada
+
                 if eh_devolucao:
                     analises.append("Operação de devolução")
 
@@ -480,17 +489,27 @@ def processar_xmls(
                             f"CST ICMS esperado {cst_esperado}"
                         )
                     
-                    if str(cst_pis).zfill(2) != str(regra["cst_pis"]).zfill(2):
+                    cst_pis_ok = str(cst_pis).zfill(2)
+                    cst_cofins_ok = str(cst_cofins).zfill(2)
 
-                        analises.append(
-                            "CST PIS divergente"
-                        )
+                    if eh_entrada:
 
-                    if str(cst_cofins).zfill(2) != str(regra["cst_cofins"]).zfill(2):
-                    
-                        analises.append(
-                            "CST COFINS divergente"
-                            )
+                        cst_pis_validos = {"49", "98"}
+                        cst_cofins_validos = {"49", "98"}
+
+                    if cst_pis_ok not in cst_pis_validos and cst_pis_ok != str(regra["cst_pis"]).zfill(2):
+                        analises.append("CST PIS divergente")
+
+                    if cst_cofins_ok not in cst_cofins_validos and cst_cofins_ok != str(regra["cst_cofins"]).zfill(2):
+                        analises.append("CST COFINS divergente")
+
+                    else:
+
+                        if cst_pis_ok != str(regra["cst_pis"]).zfill(2):
+                            analises.append("CST PIS divergente")
+                        
+                        if cst_cofins_ok != str(regra["cst_cofins"]).zfill(2):
+                            analises.append("CST COFINS divergente")
 
                     if (
                         pj_com_ie
