@@ -94,6 +94,12 @@ def processar_xmls(
 
             if ender_dest is not None:
                 uf_destino = get_text(ender_dest, "nfe:UF", NS) or ""
+
+                municipio_destino = get_text(
+                    ender_dest,
+                    "nfe:xMun",
+                    NS
+                ) or ""
             
             if not uf_origem or not uf_destino:
                 continue
@@ -624,6 +630,8 @@ def processar_xmls(
                     "UF Origem": uf_origem,
 
                     "UF Destino": uf_destino,
+
+                    "MUNICÍPIO DESTINO": municipio_destino,
 
                     "CÓDIGO DO PRODUTO": codigo_produto,
 

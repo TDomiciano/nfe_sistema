@@ -97,6 +97,52 @@ def gerar_excel(
             )
 
         # =========================
+        # DIFAL POR NOTA
+        # =========================
+        if not df.empty:
+
+            df_difal = (
+                df.groupby("Chave", as_index=False)
+                .agg({
+                    "NF": "first",
+                    "EMISSÃO": "first",
+                    "CPF/CNPJ": "first",
+                    "MUNICÍPIO DESTINO": "first",
+                    "DIFAL XML": "sum",
+                    "DIFAL CALCULADO": "sum",
+                    "FCP XML": "sum",
+                    "FCP Calculado": "sum"
+                })
+            )
+
+            df_difal["DIFAL DIFERENÇA"] = (
+                df_difal["DIFAL XML"]
+                - df_difal["FCP Calculado"]
+            ).round(2)
+
+            df_difal = df_difal[
+                [
+                    "Chave",
+                    "NF",
+                    "EMISSÃO",
+                    "CPF/CNPJ",
+                    "MUNICÍPIO DESTINO",
+                    "DIFAL XML",
+                    "DIFAL CALCULADO",
+                    "DIFAL DIFERENÇA",
+                    "FCP XML",
+                    "FCP Calculado"
+                ]
+            ]
+
+            df_difal.to_excel(
+                writer,
+                index=False,
+                sheet_name="DIFAL"
+            )
+
+
+        # =========================
         # FORMATAÇÃO
         # =========================
         workbook = writer.book
