@@ -102,11 +102,22 @@ def gerar_excel(
         if not df.empty:
 
             df_difal_base = df[
-                (df["DIFAL XML"]!= 0)
-                |
-                (df["DIFAL CALCULADO"] != 0)
-                |
-                (df["FCP XML"] != 0)
+                (
+                    (df["DIFAL XML"]!= 0)
+
+                    (df["DIFAL CALCULADO"] != 0)
+
+                    (df["FCP XML"] != 0)
+                )
+
+                &
+
+                (
+                    df["CFOP"]
+                    .astype(str)
+                    .str.startswith(("6", "7"))
+                )
+
             ].copy()
 
             df_difal = (
