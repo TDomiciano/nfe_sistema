@@ -130,7 +130,7 @@ def gerar_excel(
 
             df_difal["DIFAL DIFERENÇA"] = (
                 df_difal["DIFAL XML"]
-                - df_difal["FCP Calculado"]
+                - df_difal["DIFAL CALCULADO"]
             ).round(2)
 
             df_difal = df_difal[
