@@ -101,12 +101,25 @@ def gerar_excel(
         # =========================
         if not df.empty:
 
+            df_difal_base = df[
+                (df["DIFAL XML"]!= 0)
+                |
+                (df["DIFAL CALCULADO"] != 0)
+                |
+                (df["FCP XML"] != 0)
+            ].copy()
+
             df_difal = (
-                df.groupby("Chave", as_index=False)
+                df_difal_base.groupby(
+                    "Chave",
+                    as_index=False
+                )
                 .agg({
                     "NF": "first",
+                    "SERIE": "first",
                     "EMISSÃO": "first",
                     "CPF/CNPJ": "first",
+                    "UF Destino": "first",
                     "MUNICÍPIO DESTINO": "first",
                     "DIFAL XML": "sum",
                     "DIFAL CALCULADO": "sum",
@@ -124,8 +137,10 @@ def gerar_excel(
                 [
                     "Chave",
                     "NF",
+                    "SERIE",
                     "EMISSÃO",
                     "CPF/CNPJ",
+                    "UF Destino",
                     "MUNICÍPIO DESTINO",
                     "DIFAL XML",
                     "DIFAL CALCULADO",
