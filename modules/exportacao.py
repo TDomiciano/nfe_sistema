@@ -104,9 +104,9 @@ def gerar_excel(
             df_difal_base = df[
                 (
                     (df["DIFAL XML"]!= 0)
-
+                    |
                     (df["DIFAL CALCULADO"] != 0)
-
+                    |
                     (df["FCP XML"] != 0)
                 )
 
