@@ -113,7 +113,11 @@ def gerar_excel(
                 )                 
                 &
                 (
-                    ~df["PJ com IE"]
+                    df["IE DESTINO"]
+                    .fillna("")
+                    .astype(str)
+                    .str.strip()
+                    .eq("")
                 )
                 
             ].copy()
