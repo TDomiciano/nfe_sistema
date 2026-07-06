@@ -120,10 +120,7 @@ def gerar_excel(
                 &
                 (
                     df["UF Origem"] != df["UF Destino"])
-                &
-                (
-                    df["TIPO NF"] == 1)
-
+                
             ].copy()
 
             df_difal = (
