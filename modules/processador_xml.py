@@ -68,6 +68,12 @@ def processar_xmls(
                 NS
             )
 
+            razao_social = get_text(
+                dest,
+                "nfe:xNome",
+                NS
+            )
+
             ender_emit = (
                 emit.find(
                     "nfe:enderEmit",
@@ -622,6 +628,8 @@ def processar_xmls(
                     ),
 
                     "CPF/CNPJ": documento,
+
+                    "RAZÃO SOCIAL": razao_social,
 
                     "IE DESTINO": ie_dest,
 
