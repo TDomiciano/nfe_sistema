@@ -117,6 +117,12 @@ def gerar_excel(
                     .astype(str)
                     .str.startswith(("6", "7"))
                 )
+                &
+                (
+                    df["UF Origem"] != df["UF Destino"])
+                &
+                (
+                    df["TIPO NF"] == 1)
 
             ].copy()
 
