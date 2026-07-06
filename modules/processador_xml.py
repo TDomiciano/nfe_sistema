@@ -348,6 +348,12 @@ def processar_xmls(
                     or eh_devolucao_compra
                 )
 
+                ref_nfe = get_text(
+                    root,
+                    ".//nfe:NFref/nfe:refNFe",
+                    NS
+                )
+
                 cst_st = str(cst_icms).zfill(2) in {
                     "10",
                     "30",
@@ -439,6 +445,12 @@ def processar_xmls(
                     aliq_inter,
                     aliq_interna,
                     aliq_fcp_tabela
+                )
+
+                ref_nfe = get_text(
+                    root,
+                    ".//nfe:NFref/nfe:refNFe",
+                    NS
                 )
                 
                 # =========================
@@ -680,6 +692,10 @@ def processar_xmls(
                     "ANALISE": analise,
 
                     "Chave": chave,
+
+                    "É DEVOLUÇÃO": eh_devolucao,
+
+                    "CHAVE REFERENCIADA": ref_nfe,
                     
                     "FCP Calculado": round(
                         fcp_calc,

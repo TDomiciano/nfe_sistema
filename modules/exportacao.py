@@ -171,6 +171,91 @@ def gerar_excel(
                 sheet_name="DIFAL"
             )
 
+        # =========================
+        # DEVOLUÇÕES
+        # =========================
+        cfops_devolucao = (
+            "1201", "1202",
+            "1410", "1411",
+            "2201", "2202",
+            "2410", "2411"
+        )
+
+        df_dev_base = df[
+            df["CFOP"]
+            .astype(str)
+            .isin(cfops_devolucao)
+        ].copy()
+
+        if not df_dev_base.empty:
+
+            df_dev = (
+                df_dev_base.groupby(
+                    "Chave",
+                    as_index=False
+                )
+                .agg({
+                    "NF": "first",
+                    "SERIE": "first",
+                    "EMISSÃO": "first",
+                    "CPF/CNPJ": "first",
+                    "RAZÃO SOCIAL": "first",
+                    "UF Origem": "first",
+                    "UF Destino": "first",
+                    "CHAVE REFERENCIADA": "first",
+                    "VALOR DO PRODUTO": "sum",
+                    "ICMS": "sum",
+                    "PIS": "sum",
+                    "COFINS": "sum"
+                })
+            )
+
+            df_dev["OBSERVAÇÃO"] = ""
+
+            vendas = (
+                df.drop_duplicates("Chave")
+                  .set_index("Chave")
+            )
+
+            for idx, linha in df_dev.iterrows():
+
+                chave_ref = linha["CHAVE REFERENCIADA"]
+
+                if pd.isna(chave_ref) or str(chave_ref).strip() == "":
+                    df_dev.at[idx, "OBSERVAÇÃO"] = "NF sem chave referenciada"
+                
+                elif chave_ref not in vendas.index:
+                    df_dev.at[idx, "OBSERVAÇÃO"] = "Venda original não encontrada"
+
+                else:
+                    df_dev.at[idx, "OBSERVAÇÃO"] = "Venda original localizada"
+
+            df_dev = df_dev[
+                [
+                    "Chave",
+                    "NF",
+                    "SERIE",
+                    "EMISSÃO",
+                    "CPF/CNPJ",
+                    "RAZÃO SOCIAL",
+                    "UF Origem",
+                    "UF Destino",
+                    "VALOR DO PRODUTO",
+                    "ICMS",
+                    "PIS",
+                    "COFINS",
+                    "CHAVE REFERENCIADA",
+                    "OBSERVAÇÃO"
+                ]
+            ]
+
+            df_dev.to_excel(
+                writer,
+                index=False,
+                sheet_name="DEVOLUÇÕES"
+
+            )
+
 
         # =========================
         # FORMATAÇÃO
