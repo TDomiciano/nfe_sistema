@@ -237,6 +237,7 @@ def gerar_excel(
                 elif linha["VALOR DO PRODUTO"] > venda["VALOR DO PRODUTO"]:
                     df_dev.at[idx, "OBSERVAÇÃO"] = (
                         f"Valor devolvido maior que a venda (Venda: R$ {venda['VALOR DO PRODUTO']:.2f} | Devolução: R$ {linha['VALOR DO PRODUTO']:.2f})"
+                    )
 
                 elif linha["VALOR DO PRODUTO"] < venda["VALOR DO PRODUTO"]:
                     df_dev.at[idx, "OBSERVAÇÃO"] = (
