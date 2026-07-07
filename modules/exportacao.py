@@ -228,35 +228,56 @@ def gerar_excel(
 
             for idx, linha in df_dev.iterrows():
 
+                observacoes = []
+
                 chave_ref = linha["CHAVE REFERENCIADA"]
 
                 if pd.isna(chave_ref) or str(chave_ref).strip() == "":
-                    df_dev.at[idx, "OBSERVAÇÃO"] = "NF sem chave referenciada"
-                    continue
+                    observacoes.append("NF sem chave referenciada")
                 
                 elif chave_ref not in vendas.index:
-                    df_dev.at[idx, "OBSERVAÇÃO"] = "Venda original não encontrada"
-                    continue
-
+                    observacoes.append("Venda original não encontrada")
+                
+                else
                 venda = vendas.loc[chave_ref]
                 
                 if venda["CPF/CNPJ"] != linha["CPF/CNPJ"]:
-                    df_dev.at[idx, "OBSERVAÇÃO"] = "Cliente diferente da venda original"
+                    observacoes.append("Cliente diferente da venda original")
 
-                elif linha["VALOR DO PRODUTO"] > venda["VALOR DO PRODUTO"]:
-                    df_dev.at[idx, "OBSERVAÇÃO"] = (
+                if venda["UF Destino"] != linha["UF Destino"]:
+                    observacoes.append("UF diferente da venda original")
+
+                if linha["VALOR DO PRODUTO"] > venda["VALOR DO PRODUTO"]:
+                    observacoes.append(
                         f"Valor devolvido maior que a venda (Venda: R$ {venda['VALOR DO PRODUTO']:.2f} | Devolução: R$ {linha['VALOR DO PRODUTO']:.2f})"
                     )
 
                 elif linha["VALOR DO PRODUTO"] < venda["VALOR DO PRODUTO"]:
-                    df_dev.at[idx, "OBSERVAÇÃO"] = (
+                    observacoes.append(
                         f"Devolução parcial (Venda: R$ {venda['VALOR DO PRODUTO']:.2f} | Devolução: R$ {linha['VALOR DO PRODUTO']:.2f})"
                     )
 
-                else:
-                    df_dev.at[idx, "OBSERVAÇÃO"] = (
-                        f"Venda localizada - NF {venda['NF']}"
+                if abs(linha["ICMS"] - venda["ICMS"]) > 0.05:
+                    observacoes.append(
+                        f"ICMS divergente (Venda: R$ {venda['ICMS']:.2f} | Devolução: R$ {linha['ICMS']:.2f})"
                     )
+                
+                if abs(linha["PIS"] - venda["PIS"]) > 0.05:
+                    observacoes.append(
+                        f"PIS divergente (Venda: R$ {venda['PIS']:.2f} | Devolução: R$ {linha['PIS']:.2f})"
+                    )
+
+                if abs(linha["COFINS"] - venda["COFINS"]) > 0.05:
+                    observacoes.append(
+                      f"COFINS divergente (Venda: R$ {venda['COFINS']:.2f} | Devolução: R$ {linha['COFINS']:.2f})"
+                    )  
+
+                if not observacoes:
+                    observacoes.append(
+                        f"Devolução OK - Venda localizada (NF {venda['NF']})"
+                    )
+
+                df_dev.at[idx, "OBSERVAÇÃO"] = " | ".join(observacoes)
 
             df_dev = df_dev[
                 [
