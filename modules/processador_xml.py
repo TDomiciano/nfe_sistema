@@ -49,6 +49,12 @@ def processar_xmls(
                 NS
             )
 
+            ref_nfe = get_text(
+                root,
+                ".//nfe:NFref/nfe:refNFe",
+                NS
+            )
+
             emissao = get_text(
                 ide,
                 "nfe:dhEmi",

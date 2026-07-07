@@ -223,12 +223,24 @@ def gerar_excel(
 
                 if pd.isna(chave_ref) or str(chave_ref).strip() == "":
                     df_dev.at[idx, "OBSERVAÇÃO"] = "NF sem chave referenciada"
+                    continue
                 
                 elif chave_ref not in vendas.index:
                     df_dev.at[idx, "OBSERVAÇÃO"] = "Venda original não encontrada"
+                    continue
+
+                venda = vendas.loc[chave_ref]
+                
+                if venda["CPF/CNPJ"] != linha["CPF/CNPJ"]:
+                    df_dev.at[idx, "OBSERVAÇÃO"] = "Cliente diferente da venda original"
+
+                elif venda["VALOR DO PRODUTO"] != linha["VALOR DO PRODUTO"]:
+                    df_dev.at[idx, "OBSERVAÇÃO"] = "Valor devolvido diferente da venda"
 
                 else:
-                    df_dev.at[idx, "OBSERVAÇÃO"] = "Venda original localizada"
+                    df_dev.at[idx, "OBSERVAÇÃO"] = (
+                        f"Venda localizada - NF {venda['NF']}"
+                    )
 
             df_dev = df_dev[
                 [
