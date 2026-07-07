@@ -240,7 +240,7 @@ def gerar_excel(
                     observacoes.append("Venda original não encontrada")
                 
                 else:
-                venda = vendas.loc[chave_ref]
+                    venda = vendas.loc[chave_ref]
                 
                 if venda["CPF/CNPJ"] != linha["CPF/CNPJ"]:
                     observacoes.append("Cliente diferente da venda original")
