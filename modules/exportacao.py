@@ -213,8 +213,17 @@ def gerar_excel(
             df_dev["OBSERVAÇÃO"] = ""
 
             vendas = (
-                df.drop_duplicates("Chave")
-                  .set_index("Chave")
+                df.groupby("Chave", as_index=False)
+                  .agg({
+                      "NF": "first",
+                      "CPF/CNPJ": "first",
+                      "RAZÃO SOCIAL": "first",
+                      "VALOR DO PRODUTO": "sum",
+                      "ICMS": "sum",
+                      "PIS": "sum",
+                      "COFINS": "sum"
+                })
+                .set_index("Chave")
             )
 
             for idx, linha in df_dev.iterrows():
