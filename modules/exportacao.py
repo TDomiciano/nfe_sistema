@@ -234,8 +234,14 @@ def gerar_excel(
                 if venda["CPF/CNPJ"] != linha["CPF/CNPJ"]:
                     df_dev.at[idx, "OBSERVAÇÃO"] = "Cliente diferente da venda original"
 
-                elif venda["VALOR DO PRODUTO"] != linha["VALOR DO PRODUTO"]:
-                    df_dev.at[idx, "OBSERVAÇÃO"] = "Valor devolvido diferente da venda"
+                elif linha["VALOR DO PRODUTO"] > venda["VALOR DO PRODUTO"]:
+                    df_dev.at[idx, "OBSERVAÇÃO"] = (
+                        f"Valor devolvido maior que a venda (Venda: R$ {venda['VALOR DO PRODUTO']:.2f} | Devolução: R$ {linha['VALOR DO PRODUTO']:.2f})"
+
+                elif linha["VALOR DO PRODUTO"] < venda["VALOR DO PRODUTO"]:
+                    df_dev.at[idx, "OBSERVAÇÃO"] = (
+                        f"Devolução parcial (Venda: R$ {venda['VALOR DO PRODUTO']:.2f} | Devolução: R$ {linha['VALOR DO PRODUTO']:.2f})"
+                    )
 
                 else:
                     df_dev.at[idx, "OBSERVAÇÃO"] = (
