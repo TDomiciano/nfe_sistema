@@ -218,6 +218,7 @@ def gerar_excel(
                       "NF": "first",
                       "CPF/CNPJ": "first",
                       "RAZÃO SOCIAL": "first",
+                      "UF Destino": "first",
                       "VALOR DO PRODUTO": "sum",
                       "ICMS": "sum",
                       "PIS": "sum",
@@ -238,7 +239,7 @@ def gerar_excel(
                 elif chave_ref not in vendas.index:
                     observacoes.append("Venda original não encontrada")
                 
-                else
+                else:
                 venda = vendas.loc[chave_ref]
                 
                 if venda["CPF/CNPJ"] != linha["CPF/CNPJ"]:
