@@ -68,6 +68,16 @@ def gerar_excel(
                 df_exportar[col] = None
         df_exportar = df_exportar[colunas_auditoria]
 
+        cfops_excluir = (
+            "1202", "1411", "2202", "2411"
+        )
+
+        df_exportar = df_exportar[
+            ~df_exportar["CFOP"]
+                .astype(str)
+                .isin(cfops_excluir)
+        ]
+
         df_exportar.to_excel(
             writer,
             index=False,
