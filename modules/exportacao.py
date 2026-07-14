@@ -215,8 +215,8 @@ def gerar_excel(
                     "CHAVE REFERENCIADA": "first",
                     "VALOR DO PRODUTO": "sum",
                     "ICMS": "sum",
-                    "PIS": "sum",
-                    "COFINS": "sum"
+                    "IBS": "sum",
+                    "CBS": "sum"
                 })
             )
 
@@ -231,8 +231,8 @@ def gerar_excel(
                       "UF Destino": "first",
                       "VALOR DO PRODUTO": "sum",
                       "ICMS": "sum",
-                      "PIS": "sum",
-                      "COFINS": "sum"
+                      "IBS": "sum",
+                      "CBS": "sum"
                 })
                 .set_index("Chave")
             )
@@ -268,13 +268,13 @@ def gerar_excel(
                         observacoes.append(
                             f"ICMS divergente (Venda: R$ {venda['ICMS']:.2f} | Devolução: R$ {linha['ICMS']:.2f})")
                     
-                    if abs(linha["PIS"] - venda["PIS"]) > 0.05:
+                    if abs(linha["IBS"] - venda["IBS"]) > 0.05:
                         observacoes.append(
-                            f"PIS divergente (Venda: R$ {venda['PIS']:.2f} | Devolução: R$ {linha['PIS']:.2f})")
+                            f"IBS divergente (Venda: R$ {venda['IBS']:.2f} | Devolução: R$ {linha['IBS']:.2f})")
 
-                    if abs(linha["COFINS"] - venda["COFINS"]) > 0.05:
+                    if abs(linha["CBS"] - venda["CBS"]) > 0.05:
                         observacoes.append(
-                            f"COFINS divergente (Venda: R$ {venda['COFINS']:.2f} | Devolução: R$ {linha['COFINS']:.2f})")
+                            f"CBS divergente (Venda: R$ {venda['CBS']:.2f} | Devolução: R$ {linha['CBS']:.2f})")
 
                     if not observacoes:
                         observacoes.append(
@@ -294,8 +294,8 @@ def gerar_excel(
                     "UF Destino",
                     "VALOR DO PRODUTO",
                     "ICMS",
-                    "PIS",
-                    "COFINS",
+                    "IBS",
+                    "CBS",
                     "CHAVE REFERENCIADA",
                     "OBSERVAÇÃO"
                 ]
