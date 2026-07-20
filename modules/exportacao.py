@@ -39,6 +39,7 @@ def gerar_excel(
             "CÓDIGO DO PRODUTO",
             "PRODUTO",
             "VALOR DO PRODUTO",
+            "DESCONTO",
             "CFOP",
             "NCM",
             "CST ICMS",
@@ -77,6 +78,24 @@ def gerar_excel(
                 .astype(str)
                 .isin(cfops_excluir)
         ]
+
+        df_exportar["ANÁLISE BASE ICMS"] = ""
+
+        for idx, linha in df_exportar.iterrows():
+
+            valor = float(linha["VALOR DO PRODUTO"] or 0)
+            desconto = float(linha["DESCONTO"] or 0)
+            base = float(linha["BASE ICMS"] or 0)
+
+            base_esperada = round(valor - desconto, 2)
+
+            if abs(base - base_esperada) <= 0.05:
+                df_exportar.at[idx, "ANÁLISE BASE ICMS"] = "OK"
+
+            else:
+                df_exportar.at[idx, "ANÁLISE BASE ICMS"] = (
+                    f"Base divergente (Esperado: R$ {base_esperada:.2f} | XML: R$ {base:.2f})"
+                )
 
         df_exportar.to_excel(
             writer,

@@ -381,6 +381,10 @@ def processar_xmls(
                     ) or 0
                 )
 
+                desconto = float(
+                    get_text(prod, "nfe:vDesc", NS) or 0
+                )
+
                 quantidade = float(
                     get_text(
                         prod,
@@ -664,6 +668,8 @@ def processar_xmls(
                     "PRODUTO": produto,
 
                     "VALOR DO PRODUTO": valor_total,
+
+                    "DESCONTO": desconto,
 
                     "CFOP": cfop_xml,
 
