@@ -114,6 +114,15 @@ def gerar_excel(
                     observacoes.append(
                         f"ICMS divergente (Esperado: R$ {icms_esperado:.2f} | XML: R$ {icms:.2f})"
                     )
+
+            fcp_xml = float(linha["FCP XML"] or 0)
+            fcp_calc = float(linha["FCP Calculado"] or 0)
+
+            if abs(fcp_xml - fcp_calc) > 0.05:
+                observacoes.append(
+                    f"FCP divergente (Calculado: R$ {fcp_calc:.2f} | XML: R$ {fcp_xml:.2f})"
+                )
+
             df_exportar.at[idx, "ANALISE"] = " | ".join(observacoes)
 
         df_exportar.to_excel(
