@@ -83,19 +83,33 @@ def gerar_excel(
 
         for idx, linha in df_exportar.iterrows():
 
+            observacoes = []
+
             valor = float(linha["VALOR DO PRODUTO"] or 0)
             desconto = float(linha["DESCONTO"] or 0)
             base = float(linha["BASE ICMS"] or 0)
+            aliquota = float(linha["ALIQUOTA ICMS"] or 0)
+            icms = float(linha["ICMS"] or 0)
 
             base_esperada = round(valor - desconto, 2)
 
             if abs(base - base_esperada) <= 0.05:
-                df_exportar.at[idx, "ANÁLISE BASE ICMS"] = "OK"
-
-            else:
-                df_exportar.at[idx, "ANÁLISE BASE ICMS"] = (
+                observacoes.append(
                     f"Base divergente (Esperado: R$ {base_esperada:.2f} | XML: R$ {base:.2f})"
                 )
+
+            if str(linha["CST ICMS"]) == "00" and base > 0 and aliquota > 0:
+
+                icms_esperado = round(
+                    base * (aliquota / 100),
+                    2
+                )
+
+                if abs(icms - icms_esperado) > 0.05:
+                    observacoes.append(
+                        f"ICMS divergente (Esperado: R$ {icms_esperado:.2f} | XML: R$ {icms:.2f})"
+                    )
+            df_exportar.at[idx, "ANALISE"] = " | ".join(observacoes)
 
         df_exportar.to_excel(
             writer,
