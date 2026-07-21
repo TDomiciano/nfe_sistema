@@ -85,6 +85,11 @@ def gerar_excel(
 
             observacoes = []
 
+            analise_existente = str(linha["ANALISE"] or "").strip()
+
+            if analise_existente:
+                observacoes.append(analise_existente)
+
             valor = float(linha["VALOR DO PRODUTO"] or 0)
             desconto = float(linha["DESCONTO"] or 0)
             base = float(linha["BASE ICMS"] or 0)
@@ -93,7 +98,7 @@ def gerar_excel(
 
             base_esperada = round(valor - desconto, 2)
 
-            if abs(base - base_esperada) <= 0.05:
+            if abs(base - base_esperada) > 0.05:
                 observacoes.append(
                     f"Base divergente (Esperado: R$ {base_esperada:.2f} | XML: R$ {base:.2f})"
                 )
