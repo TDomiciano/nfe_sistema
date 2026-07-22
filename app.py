@@ -54,6 +54,15 @@ st.markdown("""
 # =========================
 # SIDEBAR
 # =========================
+tipo_auditoria = st.radio(
+    "📂 Selecione o módulo",
+    [
+        "📤 Auditoria de Saídas",
+        "📥 Auditoria de Entradas (Compras)"
+    ],
+    horizontal=True
+)
+
 with st.sidebar:
 
     st.image(
