@@ -55,7 +55,6 @@ st.markdown("""
 # SIDEBAR
 # =========================
 with st.sidebar:
-    st.image("logo.png", width=80)
 
     st.markdown("## Domiciano")
     st.caption("Auditor Fiscal")
@@ -86,8 +85,6 @@ with st.sidebar:
     else:
         st.success("📥 Módulo ativo")
         st.markdown("""
-### Recursos
-
 - ✅ Crédito de ICMS
 - ✅ Crédito de IBS
 - ✅ Crédito de CBS
