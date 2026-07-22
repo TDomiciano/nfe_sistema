@@ -3,7 +3,7 @@ import pandas as pd
 import io
 import zipfile
 
-from modules.regras import carregar_regras
+from modules.regras import carregar_regras, carregar_cfops
 from modules.aliquotas import carregar_aliquotas
 from modules.processador_xml import processar_xmls
 from modules.sequencias import verificar_quebras
@@ -112,6 +112,8 @@ if "upload_key" not in st.session_state:
 regras, regras_st = carregar_regras()
 
 tabela_icms, tabela_fcp = carregar_aliquotas()
+
+cfops = carregar_cfops()
 
 # =========================
 # UPLOAD
