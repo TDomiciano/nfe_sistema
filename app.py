@@ -65,40 +65,55 @@ with st.sidebar:
         "### Domiciano Auditor Fiscal"
     )
 
-    st.info("""
-Sistema para auditoria de:
+if tipo_auditoria == "📤 Auditoria de Saídas":
+    st.markdown("""
+**📤 Módulo de Saídas**
+Auditoria de NF-e emitidas, validação de DIFAL, FCP, devoluções, sequência numérica e demais regras fiscais.
+""")
 
-• NF-e
-
-• DIFAL
-
-• FCP
-
-• Quebra de sequência
-
-• Notas canceladas
+else:
+    st.markdown("""
+**📥 Módulo de Entradas**
+Auditoria de NF-e de fornecedores, créditos de ICMS, IBS, CBS, CFOP de entrada e validações fiscais.
 """)
 
 # =========================
 # CABEÇALHO
 # =========================
-col1, col2, col3 = st.columns([2, 1, 5])
+col_logo, col_titulo = st.columns([1.2, 5.8])
 
-with col2:
-    st.image(
-        "logo.png",
-        width=140
+with col_logo:
+    st.image("logo.png", width=120)
+     
+with col_titulo:
+
+    st.markdown("""
+    # 🔎 Auditor Fiscal
+
+    #### Plataforma Inteligente de Auditoria Tributária
+
+    *Validação de NF-e • DIFAL • FCP • Sequência • Devoluções*
+    """)
+
+    st.markdown("---")
+
+    st.markdown("## 📂 Escolha o módulo")
+
+    tipo_auditoria = st.radio(
+        "",
+        [
+            "📤 Auditoria de Saídas",
+            "📥 Auditoria de Entradas (Compras)"
+        ],
+        horizontal=True
     )
 
-with col3:
+    if tipo_auditoria == "📤 Auditoria de Saídas":
+        st.info("Auditoria de notas fiscais emitidas pela empresa.")
+    else:
+        st.info("Auditoria de notas fiscais de fornecedores (compras).")
 
-    st.title("🔎 Auditor Fiscal")
-
-    st.caption(
-        "Auditoria Fiscal de NF-e • DIFAL • FCP • Sequência Numérica"
-    )
-
-st.divider()
+    st.markdown("---")
 
 # =========================
 # STATE
@@ -118,7 +133,11 @@ cfops = carregar_cfops()
 # =========================
 # UPLOAD
 # =========================
-st.markdown("### 📂 Envie XML ou ZIP")
+if tipo_auditoria == "📤 Auditoria de Saídas":
+    st.markdown("## 📂 Envie os XML ou ZIP das NF-e de Saída")
+
+else:
+    st.markdown("## 📂 Envie os XML ou ZIP das NF-e de Entrada")
 
 uploads = st.file_uploader(
     "",
