@@ -54,37 +54,41 @@ st.markdown("""
 # =========================
 # SIDEBAR
 # =========================
-tipo_auditoria = st.radio(
-    "📂 Selecione o módulo",
-    [
-        "📤 Auditoria de Saídas",
-        "📥 Auditoria de Entradas (Compras)"
-    ],
-    horizontal=True
-)
-
 with st.sidebar:
+    st.image("logo.png", width=80)
 
-    st.image(
-        "logo.png",
-        width=80
-    )
+    st.markdown("## Domiciano")
+    st.caption("Auditor Fiscal")
 
-    st.markdown(
-        "### Domiciano Auditor Fiscal"
-    )
+    st.divider()
 
-if tipo_auditoria == "📤 Auditoria de Saídas":
-    st.markdown("""
-**📤 Módulo de Saídas**
-Auditoria de NF-e emitidas, validação de DIFAL, FCP, devoluções, sequência numérica e demais regras fiscais.
+    if tipo_auditoria == "📤 Auditoria de Saídas":
+
+        st.success("📤 Módulo ativo")
+        st.markdown("""
+- ✅ Auditoria Fiscal
+- ✅ DIFAL
+- ✅ FCP
+- ✅ Devoluções
+- ✅ Sequência Numérica
+- ✅ Notas Canceladas
 """)
+    else:
+        st.success("📥 Módulo ativo")
+        st.markdown("""
+### Recursos
 
-else:
-    st.markdown("""
-**📥 Módulo de Entradas**
-Auditoria de NF-e de fornecedores, créditos de ICMS, IBS, CBS, CFOP de entrada e validações fiscais.
+- ✅ Crédito de ICMS
+- ✅ Crédito de IBS
+- ✅ Crédito de CBS
+- ✅ CFOP Esperado
+- ✅ CST
+- ✅ NCM
+- ✅ XML Duplicado
 """)
+    st.divider()
+
+    st.caption("Versão 2.0")
 
 # =========================
 # CABEÇALHO
