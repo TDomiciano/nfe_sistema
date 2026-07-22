@@ -42,22 +42,18 @@ def verificar_quebras(df):
                 list(todas - existentes)
             )
 
-            if len(faltantes) > 0:
+            quebras.append({
 
-                quebras.append({
+                "SERIE": serie,
+                "Menor NF": menor,
+                "Maior NF": maior,
+                "Qtd Quebras": len(faltantes),
 
-                    "SERIE": serie,
-                    "Menor NF": menor,
-                    "Maior NF": maior,
-                    "Qtd Quebras": len(faltantes),
-
-                    "Notas Faltantes":
-                        ", ".join(
-                            map(
-                                str,
-                                faltantes[:100]
-                            )
-                        )
-                })
+                "Notas Faltantes":
+                    ", ".join(map((str, faltantes[:100]))
+                    if faltantes
+                    else "Nenhuma"
+                )
+            })
 
     return pd.DataFrame(quebras)
