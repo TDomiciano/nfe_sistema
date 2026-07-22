@@ -351,7 +351,7 @@ def gerar_excel(
             df_dev.to_excel(
                 writer,
                 index=False,
-                sheet_name="DEVOLUÇÕES"
+                sheet_name="DEVOLUÇÃO DE VENDA"
 
             )
 

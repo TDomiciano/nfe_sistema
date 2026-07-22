@@ -49,8 +49,8 @@ def verificar_quebras(df):
                 "Maior NF": maior,
                 "Qtd Quebras": len(faltantes),
 
-                "Notas Faltantes":
-                    ", ".join(map((str, faltantes[:100]))
+                "Notas Faltantes":(
+                    ", ".join(map(str, faltantes[:100]))
                     if faltantes
                     else "Nenhuma"
                 )
