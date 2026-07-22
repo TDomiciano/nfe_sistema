@@ -62,6 +62,16 @@ with st.sidebar:
 
     st.divider()
 
+    tipo_auditoria = st.radio(
+        "📂 Módulo",
+        [
+            "📤 Auditoria de Saídas",
+            "📥 Auditoria de Entradas (Compras)"
+        ]
+    )
+
+    st.divider()
+
     if tipo_auditoria == "📤 Auditoria de Saídas":
 
         st.success("📤 Módulo ativo")
@@ -107,26 +117,6 @@ with col_titulo:
 
     *Validação de NF-e • DIFAL • FCP • Sequência • Devoluções*
     """)
-
-    st.markdown("---")
-
-    st.markdown("## 📂 Escolha o módulo")
-
-    tipo_auditoria = st.radio(
-        "",
-        [
-            "📤 Auditoria de Saídas",
-            "📥 Auditoria de Entradas (Compras)"
-        ],
-        horizontal=True
-    )
-
-    if tipo_auditoria == "📤 Auditoria de Saídas":
-        st.info("Auditoria de notas fiscais emitidas pela empresa.")
-    else:
-        st.info("Auditoria de notas fiscais de fornecedores (compras).")
-
-    st.markdown("---")
 
 # =========================
 # STATE
