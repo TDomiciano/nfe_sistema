@@ -8,6 +8,10 @@ from modules.aliquotas import carregar_aliquotas
 from modules.processador_xml import processar_xmls
 from modules.sequencias import verificar_quebras
 from modules.exportacao import gerar_excel
+from modules.exportacao_entradas import gerar_excel_entradas
+from modules.tela_entradas import mostrar_tela_entradas
+from modules.processador_entradas import processar_entradas
+from modules.auditoria_entradas import auditar_entradas
 
 # =========================
 # CONFIG
@@ -100,20 +104,21 @@ with st.sidebar:
 # =========================
 # CABEÇALHO
 # =========================
-col_logo, col_titulo = st.columns([1.2, 5.8])
+col_logo, col_titulo = st.columns([0.80, 5.8], gap="small")
 
 with col_logo:
-    st.image("logo.png", width=120)
+    st.image("logo1.png", width=660)
      
 with col_titulo:
 
     st.markdown("""
-    # 🔎 Auditor Fiscal
+    # Auditor Fiscal
 
     #### Plataforma Inteligente de Auditoria Tributária
 
     *Validação de NF-e • DIFAL • FCP • Sequência • Devoluções*
     """)
+
 
 # =========================
 # STATE
@@ -129,6 +134,17 @@ regras, regras_st = carregar_regras()
 tabela_icms, tabela_fcp = carregar_aliquotas()
 
 cfops = carregar_cfops()
+
+def carregar_cfops():
+
+    df = pd.read_excel(
+        "config.xlsx",
+        sheet_name="CFOP"
+    )
+
+    df.columns = ["CFOP SAÍDA", "CFOP ENTRADA", "TIPO OPERAÇÃO", "DESCRIÇÃO"]
+
+    return df
 
 # =========================
 # UPLOAD
@@ -180,20 +196,39 @@ if uploads:
 # =========================
 if arquivos:
 
-    df = processar_xmls(
-        arquivos,
-        regras,
-        regras_st,
-        tabela_icms,
-        tabela_fcp
-    )
+    if tipo_auditoria == "📤 Auditoria de Saídas":
 
-    df_quebras = verificar_quebras(df)
+        df = processar_xmls(
+            arquivos,
+            regras,
+            regras_st,
+            tabela_icms,
+            tabela_fcp
+        )
 
-    df_canceladas = df[
-        df["Status"] == "CANCELADA"
-    ].copy()
+        df_quebras = verificar_quebras(df)
 
+        df_canceladas = df[
+            df["Status"] == "CANCELADA"
+        ].copy()
+
+    else:
+
+        df = processar_entradas(
+            arquivos,
+            regras,
+            regras_st,
+            cfops
+        )
+    
+        df = auditar_entradas(
+            df,
+            cfops
+        )
+
+        df_quebras = pd.DataFrame()
+        df_canceladas = pd.DataFrame()
+    
     # =========================
     # BOTÕES
     # =========================
@@ -208,152 +243,163 @@ if arquivos:
 
     with col2:
 
-        st.success(
-            f"{len(df)} registros encontrados"
-        )
+        if tipo_auditoria == "📤 Auditoria de Saídas":
+            
+            st.success(
+                f"{len(df)} registros encontrados"
+            )
+
+        else:
+            st.success(
+                f"{df['Chave'].nunique()} notas encontradas"
+            )
 
     st.divider()
 
     # =========================
     # CARDS
     # =========================
-    total_notas = df["Chave"].nunique()
+    if tipo_auditoria == "📤 Auditoria de Saídas":
+    
+        total_notas = df["Chave"].nunique()
 
-    total_autorizadas = (
-        df[df["Status"] == "AUTORIZADA"]["Chave"]
-        .nunique()
-    )
-
-    total_canceladas = (
-        df[df["Status"] == "CANCELADA"]["Chave"]
-        .nunique()
-    )
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.metric(
-            "📄 Total de Notas",
-            total_notas
+        total_autorizadas = (
+            df[df["Status"] == "AUTORIZADA"]["Chave"]
+            .nunique()
         )
 
-    with col2:
-        st.metric(
-            "✅ Autorizadas",
-            total_autorizadas
+        total_canceladas = (
+            df[df["Status"] == "CANCELADA"]["Chave"]
+            .nunique()
         )
 
-    with col3:
-        st.metric(
-            "🚫 Canceladas",
-            total_canceladas
-        )
+        col1, col2, col3 = st.columns(3)
 
+        with col1:
+            st.metric(
+                "📄 Total de Notas",
+                total_notas
+            )
+
+        with col2:
+            st.metric(
+                "✅ Autorizadas",
+                total_autorizadas
+            )
+
+        with col3:
+            st.metric(
+                "🚫 Canceladas",
+                total_canceladas
+            )
+    else:
+        total_notas = df["Chave"].nunique()
+
+        total_fornecedores = (
+            df["CNPJ EMITENTE"]
+            .dropna()
+            .nunique()
+        )
     
     st.divider()
 
     # =========================
     # ABAS
     # =========================
-    tab1, tab2, tab3 = st.tabs([
-        "📊 Auditoria",
-        "🔎 Sequência",
-        "📥 Exportação"
-    ])
+    if tipo_auditoria == "📤 Auditoria de Saídas":
+    
+        tab1, tab2, tab3 = st.tabs([
+            "📊 Auditoria",
+            "🔎 Sequência",
+            "📥 Exportação"
+        ])
 
     # =========================
     # ABA AUDITORIA
     # =========================
-    with tab1:
+        with tab1:
 
-        st.markdown("### 🔍 Filtros")
+            st.markdown("### 🔍 Filtros")
 
-        col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2)
 
-        with col1:
+            with col1:
 
-            status_filtro = st.multiselect(
-                "Status",
-                options=sorted(
-                    df["Status"].unique()
-                ),
-                default=sorted(
-                    df["Status"].unique()
+                status_filtro = st.multiselect(
+                    "Status",
+                    options=sorted(df["Status"].dropna().unique()),
+                    default=sorted(df["Status"].dropna().unique())
                 )
-            )
 
-        with col2:
+            with col2:
 
-            uf_filtro = st.multiselect(
-                "UF Destino",
-                options=sorted(
-                    df["UF Destino"]
-                    .dropna()
-                    .unique()
-                ),
-                default=sorted(
-                    df["UF Destino"]
-                    .dropna()
-                    .unique()
+                uf_filtro = st.multiselect(
+                    "UF Destino",
+                    options=sorted(
+                        df["UF Destino"]
+                        .dropna()
+                        .unique()
+                    ),
+                    default=sorted(
+                        df["UF Destino"]
+                        .dropna()
+                        .unique()
+                    )
                 )
+
+            df_filtrado = df[
+                (df["Status"].isin(status_filtro))
+                &
+                (df["UF Destino"].isin(uf_filtro))
+            ]
+
+            st.divider()
+
+            st.dataframe(
+                df_filtrado,
+                use_container_width=True,
+                hide_index=True
             )
-
-        df_filtrado = df[
-            (df["Status"].isin(status_filtro))
-            &
-            (df["UF Destino"].isin(uf_filtro))
-        ]
-
-        st.divider()
-
-        st.dataframe(
-            df_filtrado,
-            use_container_width=True,
-            hide_index=True
-        )
 
     # =========================
     # ABA SEQUÊNCIA
     # =========================
-    with tab2:
+        with tab2:
 
-        if not df_quebras.empty:
+            if not df_quebras.empty:
 
-            st.warning(
-                "⚠️ Quebras encontradas"
-            )
+                st.warning(
+                   "⚠️ Quebras encontradas"
+                )
 
-            st.dataframe(
-                df_quebras,
-                use_container_width=True
-            )
+                st.dataframe(
+                    df_quebras,
+                    use_container_width=True
+                )
+                
+            else:
 
-        else:
-
-            st.success(
-                "✅ Nenhuma quebra encontrada"
-            )
+                st.success(
+                    "✅ Nenhuma quebra encontrada"
+                )
 
     # =========================
     # ABA EXPORTAÇÃO
     # =========================
-    with tab3:
+        with tab3:
 
-        output = gerar_excel(
-            df,
-            df_quebras,
-            df_canceladas
-        )
+            output = gerar_excel(
+                df,
+                df_quebras,
+                df_canceladas
+            )
 
-        st.download_button(
-            "⬇️ Baixar Excel",
-            output,
-            file_name="auditoria_fiscal.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+            st.download_button(
+                "⬇️ Baixar Excel",
+                output,
+                file_name="auditoria_fiscal.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
-else:
-
-    st.info(
-        "Envie XML ou ZIP para iniciar a auditoria."
-    )
+    else:
+        mostrar_tela_entradas(df, cfops)
