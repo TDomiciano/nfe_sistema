@@ -135,17 +135,6 @@ tabela_icms, tabela_fcp = carregar_aliquotas()
 
 cfops = carregar_cfops()
 
-def carregar_cfops():
-
-    df = pd.read_excel(
-        "config.xlsx",
-        sheet_name="CFOP"
-    )
-
-    df.columns = ["CFOP SAÍDA", "CFOP ENTRADA", "TIPO OPERAÇÃO", "DESCRIÇÃO"]
-
-    return df
-
 # =========================
 # UPLOAD
 # =========================
