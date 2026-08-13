@@ -31,16 +31,16 @@ def carregar_regras():
 @st.cache_data
 def carregar_cfops():
 
-    cfops = pd.read_excel(
+    df = pd.read_excel(
         "conf_fiscais.xlsx",
         sheet_name="CFOP",
-        dtype=str
     )
 
-    cfops.columns = (
-        cfops.columns
+    df.columns = (
+        df.columns
+        .astype(str)
         .str.strip()
-        .str.lower()
+        .str.upper()
     )
 
-    return cfops.fillna("")
+    return df

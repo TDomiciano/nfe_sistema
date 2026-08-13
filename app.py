@@ -203,17 +203,43 @@ if arquivos:
 
     else:
 
-        df = processar_entradas(
-            arquivos,
-            regras,
-            regras_st,
-            cfops
+        #Processa XML somente uma vez
+
+        nomes_arquivos = tuple(
+            arquivo.name
+            for arquivo in arquivos
         )
+
+        if (
+            "df_entradas_processado" not in st.session_state
+            or
+            st.session_state.get("entradas_arquivos") != nomes_arquivos
+        ):
+
+            with st.spinner("🔄 Processando XMLs de entrada..."):
+
+                df_entradas = processar_entradas(
+                    arquivos,
+                    regras,
+                    regras_st,
+                    cfops
+                )
+
+                df_entradas = auditar_entradas(
+                    df_entradas,
+                    cfops
+                )
+            
+            st.session_state.df_entradas_processado = df_entradas.copy()
+            st.session_state.entradas_arquivos = nomes_arquivos
+        
+        else:
+
+            df_entradas = (
+                st.session_state.df_entradas_processado.copy()
+            )
     
-        df = auditar_entradas(
-            df,
-            cfops
-        )
+        df = df_entradas
 
         df_quebras = pd.DataFrame()
         df_canceladas = pd.DataFrame()
@@ -228,6 +254,27 @@ if arquivos:
         if st.button("🔄 Nova Auditoria"):
 
             st.session_state.upload_key += 1
+
+            st.session_state.pop(
+                "df_entradas_processado",
+                None
+            )
+
+            st.session_state.pop(
+                "entradas_arquivos",
+                None
+            )
+
+            st.session_state.pop(
+                "df_notas",
+                None
+            )
+
+            st.session_state.pop(
+                "editor_entradas",
+                None
+            )
+
             st.rerun()
 
     with col2:
@@ -391,4 +438,8 @@ if arquivos:
             )
 
     else:
-        mostrar_tela_entradas(df, cfops)
+        @st.fragment
+        def tela_entradas_fragment():
+            mostrar_tela_entradas(df, cfops)
+
+        tela_entradas_fragment()
