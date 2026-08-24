@@ -420,6 +420,29 @@ def processar_entradas(
                         )
 
                 # =========================
+                # DIFAL
+                # =========================
+
+                difal = 0.0
+
+                if imposto is not None:
+
+                    icms_ufdest = imposto.find(
+                        ".//nfe:ICMSUFDest",
+                        NS
+                    )
+
+                    if icms_ufdest is not None:
+
+                        difal = float(
+                            get_text(
+                                icms_ufdest,
+                                "nfe:vICMSUFDest",
+                                NS
+                            ) or 0
+                        )
+
+                # =========================
                 # IBS / CBS
                 # =========================
                 ibs = 0.0
@@ -545,6 +568,8 @@ def processar_entradas(
                     "IBS": ibs,
 
                     "CBS": cbs,
+
+                    "DIFAL": difal,
 
                     "Status": status,
 

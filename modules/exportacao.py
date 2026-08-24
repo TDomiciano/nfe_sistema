@@ -262,6 +262,7 @@ def gerar_excel(
                     "CHAVE REFERENCIADA": "first",
                     "VALOR DO PRODUTO": "sum",
                     "ICMS": "sum",
+                    "DIFAL XML": "sum",
                     "IBS": "sum",
                     "CBS": "sum"
                 })
@@ -278,6 +279,7 @@ def gerar_excel(
                       "UF Destino": "first",
                       "VALOR DO PRODUTO": "sum",
                       "ICMS": "sum",
+                      "DIFAL XML": "sum",
                       "IBS": "sum",
                       "CBS": "sum"
                 })
@@ -311,10 +313,33 @@ def gerar_excel(
                     elif linha["VALOR DO PRODUTO"] < venda["VALOR DO PRODUTO"]:
                         observacoes.append(
                             f"Devolução parcial (Venda: R$ {venda['VALOR DO PRODUTO']:.2f} | Devolução: R$ {linha['VALOR DO PRODUTO']:.2f})")
+                    
+                    #ICMS
                     if abs(linha["ICMS"] - venda["ICMS"]) > 0.05:
                         observacoes.append(
                             f"ICMS divergente (Venda: R$ {venda['ICMS']:.2f} | Devolução: R$ {linha['ICMS']:.2f})")
                     
+                    #DIFAL
+                    difal_venda = float(venda["DIFAL XML"] or 0)
+                    difal_devolucao = float(linha["DIFAL XML"] or 0)
+
+                    if difal_venda > 0:
+
+                        if abs(difal_devolucao - difal_venda) <= 0.05:
+
+                            observacoes.append(
+                                "DIFAL OK"
+                            )
+
+                        else:
+
+                            observacoes.append(
+                                f"DIFAL divergente "
+                                f"(Venda: R$ {difal_venda:.2f} | "
+                                f"Devolução: R$ {difal_devolucao:.2f})"
+                            )
+                    
+                    #IBS e CBS
                     if abs(linha["IBS"] - venda["IBS"]) > 0.05:
                         observacoes.append(
                             f"IBS divergente (Venda: R$ {venda['IBS']:.2f} | Devolução: R$ {linha['IBS']:.2f})")
