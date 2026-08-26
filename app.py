@@ -37,9 +37,6 @@ from modules.supabase_db import testar_supabase
 
 dados_teste = testar_supabase()
 
-st.success("✅ Supabase conectado e tabela acessível")
-st.write("Registros encontrados:", len(dados_teste))
-
 # =========================
 # CSS
 # =========================
@@ -117,7 +114,7 @@ with st.sidebar:
 """)
     st.divider()
 
-    st.caption("Versão 2.0")
+    st.caption("Versão 3.9")
 
 # =========================
 # CABEÇALHO
