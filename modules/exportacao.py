@@ -2,6 +2,7 @@ import io
 import pandas as pd
 from openpyxl.styles import Font
 
+from modules.supabase_db import buscar_venda_historico
 
 def gerar_excel(
     df,
@@ -292,14 +293,88 @@ def gerar_excel(
 
                 chave_ref = linha["CHAVE REFERENCIADA"]
 
+                venda = None
+
                 if pd.isna(chave_ref) or str(chave_ref).strip() == "":
                     observacoes.append("NF sem chave referenciada")
-                
-                elif chave_ref not in vendas.index:
-                    observacoes.append("Venda original não encontrada")
-                
+
                 else:
-                    venda = vendas.loc[chave_ref]
+
+                    chave_ref = str(chave_ref).strip()
+
+                    if chave_ref in vendas.index:
+
+                        venda = vendas.loc[chave_ref]
+
+                    else:
+
+                        historico = buscar_venda_historico(
+                            chave_ref
+                        )
+
+                        if historico:
+
+                            historico_df = pd.DataFrame(
+                                historico
+                            )
+
+                            venda = pd.Series({
+
+                                "NF":
+                                    historico_df["nf"].iloc[0],
+
+                                "CPF/CNPJ":
+                                    historico_df["cpf_cnpj"].iloc[0],
+
+                                "RAZÃO SOCIAL":
+                                    historico_df["razao_social"].iloc[0],
+
+                                "UF Destino":
+                                    historico_df["uf_destino"].iloc[0],
+
+                                "VALOR DO PRODUTO":
+                                    historico_df["valor_produto"]
+                                    .fillna(0)
+                                    .astype(float)
+                                    .sum(),
+
+                                "ICMS":
+                                    historico_df["icms"]
+                                    .fillna(0)
+                                    .astype(float)
+                                    .sum(),
+
+                                "DIFAL XML":
+                                    historico_df["difal"]
+                                    .fillna(0)
+                                    .astype(float)
+                                    .sum(),
+                                
+                                "IBS":
+                                    historico_df["ibs"]
+                                    .fillna(0)
+                                    .astype(float)
+                                    .sum(),
+
+                                "CBS":
+                                    historico_df["cbs"]
+                                    .fillna(0)
+                                    .astype(float)
+                                    .sum()
+                            })
+
+                # ==========================================
+                # VENDA NÃO EXISTE NEM NO XML NEM NO BANCO
+                # ==========================================
+
+                if venda is None:
+
+                    if not observacoes:
+                        observacoes.append(
+                            "Venda original não encontrada"
+                        )
+
+                else:
                     if venda["CPF/CNPJ"] != linha["CPF/CNPJ"]:
                         observacoes.append("Cliente diferente da venda original")
                     

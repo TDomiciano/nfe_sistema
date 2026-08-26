@@ -190,6 +190,10 @@ def processar_xmls(
 
             for item in itens:
 
+                numero_item = int(
+                    item.attrib.get("nItem", 0)
+                )
+                
                 prod = item.find(
                     "nfe:prod",
                     NS
@@ -662,6 +666,8 @@ def processar_xmls(
                     "UF Destino": uf_destino,
 
                     "MUNICÍPIO DESTINO": municipio_destino,
+
+                    "NUMERO ITEM": numero_item,
 
                     "CÓDIGO DO PRODUTO": codigo_produto,
 

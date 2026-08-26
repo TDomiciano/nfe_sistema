@@ -13,6 +13,12 @@ from modules.tela_entradas import mostrar_tela_entradas
 from modules.processador_entradas import processar_entradas
 from modules.auditoria_entradas import auditar_entradas
 
+from modules.supabase_db import (
+    conectar_supabase,
+    testar_supabase,
+    salvar_vendas_historico
+)
+
 # =========================
 # CONFIG
 # =========================
@@ -21,6 +27,18 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+
+# =========================
+# TESTE SUPABASE
+# =========================
+supabase = conectar_supabase()
+
+from modules.supabase_db import testar_supabase
+
+dados_teste = testar_supabase()
+
+st.success("✅ Supabase conectado e tabela acessível")
+st.write("Registros encontrados:", len(dados_teste))
 
 # =========================
 # CSS
@@ -194,6 +212,20 @@ if arquivos:
             tabela_icms,
             tabela_fcp
         )
+
+        try:
+
+            qtd_salvas = salvar_vendas_historico(df)
+
+            st.caption(
+                f"💾 {qtd_salvas} registros enviados ao histórico."
+            )
+        
+        except Exception as e:
+
+            st.warning(
+                f"⚠️ Não foi possível atualizar o histórico: {e}"
+            )
 
         df_quebras = verificar_quebras(df)
 
