@@ -192,14 +192,7 @@ def salvar_vendas_historico(df):
         .execute()
     )
 
-    print("RESPOSTA SUPABASE:")
-    print(resposta)
-
-    print("DADOS RETORNADOS:")
-    print(resposta.data)
-
     return len(resposta.data or [])
-
 
 def buscar_venda_historico(chave):
 
@@ -220,3 +213,29 @@ def buscar_venda_historico(chave):
     )
 
     return resposta.data
+
+def buscar_vendas_historico_lote(chaves):
+
+    if not chaves:
+        return[]
+
+    chaves = list({
+        str(chave).strip()
+        for chave in chaves
+        if chave and str(chave).strip()
+    })
+
+    if not chaves:
+        return[]
+
+    supabase = conectar_supabase()
+
+    resposta = (
+        supabase
+        .table("vendas_historico")
+        .select("*")
+        .in_("chave", chaves)
+        .execute()
+    )
+
+    return resposta.data or []

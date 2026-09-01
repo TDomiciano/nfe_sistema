@@ -2,7 +2,7 @@ import io
 import pandas as pd
 from openpyxl.styles import Font
 
-from modules.supabase_db import buscar_venda_historico
+from modules.supabase_db import buscar_vendas_historico_lote
 
 def gerar_excel(
     df,
@@ -287,6 +287,56 @@ def gerar_excel(
                 .set_index("Chave")
             )
 
+            # ==========================================
+            # BUSCA VENDAS HISTÓRICAS EM LOTE
+            # ==========================================
+
+            chaves_historico = []
+
+            for chave_ref in df_dev["CHAVE REFERENCIADA"]:
+
+                if pd.isna(chave_ref):
+                    continue
+
+                chave_ref = str(chave_ref).strip()
+
+                if not chave_ref:
+                    continue
+
+                # Só consulta o banco se a venda
+                # não estiver nos XMLs carregados
+                if chave_ref not in vendas.index:
+                    chaves_historico.append(chave_ref)
+
+            # Remove chaves repetidas
+            chaves_historico = list(set(chaves_historico))
+
+            historico_por_chave = {}
+
+            if chaves_historico:
+
+                historico_lote = buscar_vendas_historico_lote(
+                    chaves_historico
+                )
+
+                if historico_lote:
+
+                    historico_df_lote = pd.DataFrame(
+                        historico_lote
+                    )
+
+                    for chave, grupo in historico_df_lote.groupby(
+                        "chave"
+                    ):
+
+                        historico_por_chave[
+                            str(chave).strip()
+                        ] = grupo.copy()
+
+            # ==========================================
+            # ANALISA CADA DEVOLUÇÃO
+            # ==========================================
+
             for idx, linha in df_dev.iterrows():
 
                 observacoes = []
@@ -295,28 +345,45 @@ def gerar_excel(
 
                 venda = None
 
-                if pd.isna(chave_ref) or str(chave_ref).strip() == "":
-                    observacoes.append("NF sem chave referenciada")
+                # ======================================
+                # SEM CHAVE REFERENCIADA
+                # ======================================
+
+                if (
+                    pd.isna(chave_ref)
+                    or str(chave_ref).strip() == ""
+                ):
+
+                    observacoes.append(
+                        "NF sem chave referenciada"
+                    )
 
                 else:
 
                     chave_ref = str(chave_ref).strip()
 
+                    # ==================================
+                    # VENDA ESTÁ NOS XMLs CARREGADOS
+                    # ==================================
+
                     if chave_ref in vendas.index:
 
                         venda = vendas.loc[chave_ref]
 
+                    # ==================================
+                    # PROCURA NO HISTÓRICO DO SUPABASE
+                    # ==================================
+
                     else:
 
-                        historico = buscar_venda_historico(
+                        historico_df = historico_por_chave.get(
                             chave_ref
                         )
 
-                        if historico:
-
-                            historico_df = pd.DataFrame(
-                                historico
-                            )
+                        if (
+                            historico_df is not None
+                            and not historico_df.empty
+                        ):
 
                             venda = pd.Series({
 
@@ -324,48 +391,64 @@ def gerar_excel(
                                     historico_df["nf"].iloc[0],
 
                                 "CPF/CNPJ":
-                                    historico_df["cpf_cnpj"].iloc[0],
+                                    historico_df[
+                                        "cpf_cnpj"
+                                    ].iloc[0],
 
                                 "RAZÃO SOCIAL":
-                                    historico_df["razao_social"].iloc[0],
+                                    historico_df[
+                                        "razao_social"
+                                    ].iloc[0],
 
                                 "UF Destino":
-                                    historico_df["uf_destino"].iloc[0],
+                                    historico_df[
+                                        "uf_destino"
+                                    ].iloc[0],
 
                                 "VALOR DO PRODUTO":
-                                    historico_df["valor_produto"]
+                                    historico_df[
+                                        "valor_produto"
+                                    ]
                                     .fillna(0)
                                     .astype(float)
                                     .sum(),
 
                                 "ICMS":
-                                    historico_df["icms"]
+                                    historico_df[
+                                        "icms"
+                                    ]
                                     .fillna(0)
                                     .astype(float)
                                     .sum(),
 
                                 "DIFAL XML":
-                                    historico_df["difal"]
+                                    historico_df[
+                                        "difal"
+                                    ]
                                     .fillna(0)
                                     .astype(float)
                                     .sum(),
-                                
+
                                 "IBS":
-                                    historico_df["ibs"]
+                                    historico_df[
+                                        "ibs"
+                                    ]
                                     .fillna(0)
                                     .astype(float)
                                     .sum(),
 
                                 "CBS":
-                                    historico_df["cbs"]
+                                    historico_df[
+                                        "cbs"
+                                    ]
                                     .fillna(0)
                                     .astype(float)
                                     .sum()
                             })
 
-                # ==========================================
-                # VENDA NÃO EXISTE NEM NO XML NEM NO BANCO
-                # ==========================================
+                # ======================================
+                # VENDA NÃO LOCALIZADA
+                # ======================================
 
                 if venda is None:
 
@@ -375,32 +458,98 @@ def gerar_excel(
                         )
 
                 else:
-                    if venda["CPF/CNPJ"] != linha["CPF/CNPJ"]:
-                        observacoes.append("Cliente diferente da venda original")
-                    
-                    if venda["UF Destino"] != linha["UF Destino"]:
-                        observacoes.append("UF diferente da venda original")
 
-                    if linha["VALOR DO PRODUTO"] > venda["VALOR DO PRODUTO"]:
+                    # ==================================
+                    # CLIENTE
+                    # ==================================
+
+                    if (
+                        str(venda["CPF/CNPJ"]).strip()
+                        != str(linha["CPF/CNPJ"]).strip()
+                    ):
                         observacoes.append(
-                            f"Valor devolvido maior que a venda (Venda: R$ {venda['VALOR DO PRODUTO']:.2f} | Devolução: R$ {linha['VALOR DO PRODUTO']:.2f})")
-                    
-                    elif linha["VALOR DO PRODUTO"] < venda["VALOR DO PRODUTO"]:
+                            "Cliente diferente da venda original"
+                        )
+
+                    # ==================================
+                    # UF
+                    # ==================================
+
+                    if (
+                        str(venda["UF Destino"]).strip()
+                        != str(linha["UF Destino"]).strip()
+                    ):
                         observacoes.append(
-                            f"Devolução parcial (Venda: R$ {venda['VALOR DO PRODUTO']:.2f} | Devolução: R$ {linha['VALOR DO PRODUTO']:.2f})")
-                    
-                    #ICMS
-                    if abs(linha["ICMS"] - venda["ICMS"]) > 0.05:
+                            "UF diferente da venda original"
+                        )
+
+                    # ==================================
+                    # VALOR
+                    # ==================================
+
+                    valor_venda = float(
+                        venda["VALOR DO PRODUTO"] or 0
+                    )
+
+                    valor_devolucao = float(
+                        linha["VALOR DO PRODUTO"] or 0
+                    )
+
+                    if valor_devolucao > valor_venda + 0.05:
+
                         observacoes.append(
-                            f"ICMS divergente (Venda: R$ {venda['ICMS']:.2f} | Devolução: R$ {linha['ICMS']:.2f})")
-                    
-                    #DIFAL
-                    difal_venda = float(venda["DIFAL XML"] or 0)
-                    difal_devolucao = float(linha["DIFAL XML"] or 0)
+                            f"Valor devolvido maior que a venda "
+                            f"(Venda: R$ {valor_venda:.2f} | "
+                            f"Devolução: R$ {valor_devolucao:.2f})"
+                        )
+
+                    elif valor_devolucao < valor_venda - 0.05:
+
+                        observacoes.append(
+                            f"Devolução parcial "
+                            f"(Venda: R$ {valor_venda:.2f} | "
+                            f"Devolução: R$ {valor_devolucao:.2f})"
+                        )
+
+                    # ==================================
+                    # ICMS
+                    # ==================================
+
+                    icms_venda = float(
+                        venda["ICMS"] or 0
+                    )
+
+                    icms_devolucao = float(
+                        linha["ICMS"] or 0
+                    )
+
+                    if abs(
+                        icms_devolucao - icms_venda
+                    ) > 0.05:
+
+                        observacoes.append(
+                            f"ICMS divergente "
+                            f"(Venda: R$ {icms_venda:.2f} | "
+                            f"Devolução: R$ {icms_devolucao:.2f})"
+                        )
+
+                    # ==================================
+                    # DIFAL
+                    # ==================================
+
+                    difal_venda = float(
+                        venda["DIFAL XML"] or 0
+                    )
+
+                    difal_devolucao = float(
+                        linha["DIFAL XML"] or 0
+                    )
 
                     if difal_venda > 0:
 
-                        if abs(difal_devolucao - difal_venda) <= 0.05:
+                        if abs(
+                            difal_devolucao - difal_venda
+                        ) <= 0.05:
 
                             observacoes.append(
                                 "DIFAL OK"
@@ -413,21 +562,67 @@ def gerar_excel(
                                 f"(Venda: R$ {difal_venda:.2f} | "
                                 f"Devolução: R$ {difal_devolucao:.2f})"
                             )
-                    
-                    #IBS e CBS
-                    if abs(linha["IBS"] - venda["IBS"]) > 0.05:
-                        observacoes.append(
-                            f"IBS divergente (Venda: R$ {venda['IBS']:.2f} | Devolução: R$ {linha['IBS']:.2f})")
 
-                    if abs(linha["CBS"] - venda["CBS"]) > 0.05:
+                    # ==================================
+                    # IBS
+                    # ==================================
+
+                    ibs_venda = float(
+                        venda["IBS"] or 0
+                    )
+
+                    ibs_devolucao = float(
+                        linha["IBS"] or 0
+                    )
+
+                    if abs(
+                        ibs_devolucao - ibs_venda
+                    ) > 0.05:
+
                         observacoes.append(
-                            f"CBS divergente (Venda: R$ {venda['CBS']:.2f} | Devolução: R$ {linha['CBS']:.2f})")
+                            f"IBS divergente "
+                            f"(Venda: R$ {ibs_venda:.2f} | "
+                            f"Devolução: R$ {ibs_devolucao:.2f})"
+                        )
+
+                    # ==================================
+                    # CBS
+                    # ==================================
+
+                    cbs_venda = float(
+                        venda["CBS"] or 0
+                    )
+
+                    cbs_devolucao = float(
+                        linha["CBS"] or 0
+                    )
+
+                    if abs(
+                        cbs_devolucao - cbs_venda
+                    ) > 0.05:
+
+                        observacoes.append(
+                            f"CBS divergente "
+                            f"(Venda: R$ {cbs_venda:.2f} | "
+                            f"Devolução: R$ {cbs_devolucao:.2f})"
+                        )
+
+                    # ==================================
+                    # TUDO OK
+                    # ==================================
 
                     if not observacoes:
-                        observacoes.append(
-                            f"Devolução OK - Venda localizada (NF {venda['NF']})")
 
-                df_dev.at[idx, "OBSERVAÇÃO"] = " | ".join(observacoes)
+                        observacoes.append(
+                            f"Devolução OK - Venda localizada "
+                            f"(NF {venda['NF']})"
+                        )
+
+                df_dev.at[
+                    idx,
+                    "OBSERVAÇÃO"
+                ] = " | ".join(observacoes)
+                    
 
             df_dev = df_dev[
                 [
