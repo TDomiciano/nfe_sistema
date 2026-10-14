@@ -39,6 +39,7 @@ def gerar_excel(
             "UF Destino",
             "CÓDIGO DO PRODUTO",
             "PRODUTO",
+            "ORIGEM DO PRODUTO",
             "VALOR DO PRODUTO",
             "DESCONTO",
             "CFOP",

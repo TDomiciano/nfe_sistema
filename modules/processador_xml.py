@@ -229,6 +229,29 @@ def processar_xmls(
                         cst_icms = valor
                         break
 
+                codigo_origem = get_text(
+                    icms,
+                    "nfe:orig",
+                    NS
+                ) or ""
+
+                origens_produto = {
+                    "0": "Nacional",
+                    "1": "Estrangeira - Importação direta",
+                    "2": "Estrangeira - Adquirida no mercado interno",
+                    "3": "Nacional - Conteúdo de importação superior a 40% e até 70%",
+                    "4": "Nacional - Processos produtivos básicos",
+                    "5": "Nacional - Conteúdo de importação inferior ou igual a 40%",
+                    "6": "Estrangeira - Importação direta, sem similar nacional",
+                    "7": "Estrangeira - Adquirida no mercado interno, sem similar nacional",
+                    "8": "Nacional - Conteúdo de importação superior a 70%"
+                }
+
+                origem_produto = origens_produto.get(
+                    str(codigo_origem).strip(),
+                    f"Origem {codigo_origem}" if codigo_origem else ""
+                )
+
                 icms_ufdest = (
                     imposto.find(
                         ".//nfe:ICMSUFDest",
@@ -672,6 +695,8 @@ def processar_xmls(
                     "CÓDIGO DO PRODUTO": codigo_produto,
 
                     "PRODUTO": produto,
+
+                    "ORIGEM DO PRODUTO": origem_produto,
 
                     "VALOR DO PRODUTO": valor_total,
 

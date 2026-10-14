@@ -192,6 +192,8 @@ def salvar_vendas_historico(df):
         .execute()
     )
 
+    _buscar_vendas_historico_lote_cache.clear()
+
     return len(resposta.data or [])
 
 def buscar_venda_historico(chave):
@@ -214,16 +216,8 @@ def buscar_venda_historico(chave):
 
     return resposta.data
 
-def buscar_vendas_historico_lote(chaves):
-
-    if not chaves:
-        return[]
-
-    chaves = list({
-        str(chave).strip()
-        for chave in chaves
-        if chave and str(chave).strip()
-    })
+@st.cache_data(ttl=300)
+def buscar_vendas_historico_lote_cache(chaves):
 
     if not chaves:
         return[]
@@ -234,8 +228,26 @@ def buscar_vendas_historico_lote(chaves):
         supabase
         .table("vendas_historico")
         .select("*")
-        .in_("chave", chaves)
+        .in_("chave", list(chaves))
         .execute()
     )
 
     return resposta.data or []
+
+def buscar_vendas_historico_lote(chave):
+
+    if not chaves:
+        return[]
+
+    chaves = tuple(sorted({
+        str(chave).strip()
+        for chave in chaves
+        if chave and str(chaves).strip()
+    }))
+
+    if not chaves:
+        return[]
+
+    return _buscar_vendas_historico_lote_cache(
+        chaves
+    )
