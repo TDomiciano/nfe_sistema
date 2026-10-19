@@ -234,7 +234,7 @@ def buscar_vendas_historico_lote_cache(chaves):
 
     return resposta.data or []
 
-def buscar_vendas_historico_lote(chave):
+def buscar_vendas_historico_lote(chaves):
 
     if not chaves:
         return[]
@@ -242,7 +242,7 @@ def buscar_vendas_historico_lote(chave):
     chaves = tuple(sorted({
         str(chave).strip()
         for chave in chaves
-        if chave and str(chaves).strip()
+        if chave and str(chave).strip()
     }))
 
     if not chaves:
