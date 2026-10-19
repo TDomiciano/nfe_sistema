@@ -192,7 +192,7 @@ def salvar_vendas_historico(df):
         .execute()
     )
 
-    _buscar_vendas_historico_lote_cache.clear()
+    buscar_vendas_historico_lote_cache.clear()
 
     return len(resposta.data or [])
 
@@ -220,7 +220,7 @@ def buscar_venda_historico(chave):
 def buscar_vendas_historico_lote_cache(chaves):
 
     if not chaves:
-        return[]
+        return []
 
     supabase = conectar_supabase()
 
@@ -237,7 +237,7 @@ def buscar_vendas_historico_lote_cache(chaves):
 def buscar_vendas_historico_lote(chaves):
 
     if not chaves:
-        return[]
+        return []
 
     chaves = tuple(sorted({
         str(chave).strip()
@@ -246,7 +246,7 @@ def buscar_vendas_historico_lote(chaves):
     }))
 
     if not chaves:
-        return[]
+        return []
 
     return _buscar_vendas_historico_lote_cache(
         chaves
