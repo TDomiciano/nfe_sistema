@@ -248,6 +248,6 @@ def buscar_vendas_historico_lote(chaves):
     if not chaves:
         return []
 
-    return _buscar_vendas_historico_lote_cache(
+    return buscar_vendas_historico_lote_cache(
         chaves
     )
