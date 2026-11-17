@@ -325,6 +325,14 @@ def processar_entradas(
                     NS
                 )
 
+                quantidade = float(
+                    get_text(
+                        prod,
+                        "nfe:qCom",
+                        NS
+                    ) or 0
+                )
+
                 valor_prod = float(
                     get_text(
                         prod,
@@ -540,6 +548,8 @@ def processar_entradas(
                     "CÓDIGO DO PRODUTO": c_prod,
 
                     "PRODUTO": x_prod,
+
+                    "QUANTIDADE": quantidade,
 
                     "NCM": ncm,
 
