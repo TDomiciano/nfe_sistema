@@ -362,7 +362,9 @@ def processar_xmls(
                     "1202",
                     "1411",
                     "2202",
-                    "2411"
+                    "2411",
+                    "1949",
+                    "2949"
 
                 }
 
@@ -504,16 +506,18 @@ def processar_xmls(
                     "5202",
                     "5411",
                     "6202",
-                    "6411"
+                    "6411",
+                    "1949",
+                    "2949"
                 }
 
                 eh_devolucao = cfop_xml in cfops_devolucao
 
                 cfops_entrada = {
                     "1101","1102","1113","1116",
-                    "1201","1202",
+                    "1201","1202","1949",
                     "2101","2102","2113","2116",
-                    "2201","2202"
+                    "2201","2202","2949"
                 }
 
                 eh_entrada = cfop_xml in cfops_entrada
@@ -695,6 +699,8 @@ def processar_xmls(
                     "CÓDIGO DO PRODUTO": codigo_produto,
 
                     "PRODUTO": produto,
+
+                    "QUANTIDADE": quantidade,
 
                     "ORIGEM DO PRODUTO": origem_produto,
 

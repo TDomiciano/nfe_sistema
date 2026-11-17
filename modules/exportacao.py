@@ -39,6 +39,7 @@ def gerar_excel(
             "UF Destino",
             "CÓDIGO DO PRODUTO",
             "PRODUTO",
+            "QUANTIDADE",
             "ORIGEM DO PRODUTO",
             "VALOR DO PRODUTO",
             "DESCONTO",
@@ -72,7 +73,7 @@ def gerar_excel(
         df_exportar = df_exportar[colunas_auditoria]
 
         cfops_excluir = (
-            "1202", "1411", "2202", "2411"
+            "1202", "1411", "2202", "2411", "1949", "2949"
         )
 
         df_exportar = df_exportar[
@@ -237,7 +238,8 @@ def gerar_excel(
             "1201", "1202",
             "1410", "1411",
             "2201", "2202",
-            "2410", "2411"
+            "2410", "2411",
+            "1949", "2949"
         )
 
         df_dev_base = df[
